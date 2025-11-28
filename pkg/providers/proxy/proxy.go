@@ -16,6 +16,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/arqut/arqut-edge-ce/pkg/config"
 	"github.com/arqut/arqut-edge-ce/pkg/logger"
 	"github.com/arqut/arqut-edge-ce/pkg/providers"
 	"github.com/arqut/arqut-edge-ce/pkg/signaling"
@@ -40,8 +41,8 @@ type SyncCallback struct {
 
 // ProxyProvider implements Provider using HTTP reverse proxy
 type ProxyProvider struct {
-	storage  storage.Storage
-	logger   *logger.Logger
+	storage    storage.Storage
+	logger     *logger.Logger
 	interfaces map[string]string // interface name -> IP
 	servers    map[string]*http.Server
 	ctx        context.Context
@@ -92,6 +93,36 @@ func (p *ProxyProvider) Initialize(ctx context.Context, registry *providers.Regi
 	// Auto-migrate proxy service table
 	if err := p.storage.DB().AutoMigrate(&storage.ProxyService{}); err != nil {
 		return fmt.Errorf("failed to migrate proxy_services table: %w", err)
+	}
+
+	// Check if any services exist, if not create a default one
+	var count int64
+	if err := p.storage.DB().Model(&storage.ProxyService{}).Count(&count).Error; err != nil {
+		return fmt.Errorf("failed to count proxy services: %w", err)
+	}
+
+	if count == 0 {
+		p.logger.Println("No proxy services found, creating default service")
+		cfg, ok := registry.Config().(*config.Config)
+		if !ok {
+			return fmt.Errorf("invalid config type")
+		}
+		addr := cfg.ServerAddr
+		host, portStr, err := net.SplitHostPort(addr)
+		if err != nil {
+			return fmt.Errorf("failed to parse server address: %w", err)
+		}
+		port, err := net.LookupPort("tcp", portStr)
+		if err != nil {
+			return fmt.Errorf("failed to lookup server port: %w", err)
+		}
+		if host == "" || host == "::" || host == "0.0.0.0" {
+			host = "localhost"
+		}
+		_, err = p.AddService("Edge UI", host, port, "http")
+		if err != nil {
+			return fmt.Errorf("failed to create default proxy service: %w", err)
+		}
 	}
 
 	return nil
@@ -878,5 +909,7 @@ func generateID() string {
 }
 
 // Verify that ProxyProvider implements both Service and Provider interfaces
-var _ providers.ProxyProvider = (*ProxyProvider)(nil)
-var _ providers.Service = (*ProxyProvider)(nil)
+var (
+	_ providers.ProxyProvider = (*ProxyProvider)(nil)
+	_ providers.Service       = (*ProxyProvider)(nil)
+)

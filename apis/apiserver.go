@@ -23,7 +23,7 @@ type ApiServer struct {
 }
 
 // New creates a new HTTP server with the given service registry
-func New(p *providers.Registry) *ApiServer {
+func New(p *providers.Registry, withUI bool) *ApiServer {
 	app := fiber.New(fiber.Config{
 		ErrorHandler: customErrorHandler,
 	})
@@ -35,7 +35,7 @@ func New(p *providers.Registry) *ApiServer {
 	}
 
 	s.setupMiddleware()
-	s.setupRoutes()
+	s.setupRoutes(withUI)
 
 	return s
 }
@@ -45,7 +45,7 @@ func (s *ApiServer) setupMiddleware() {
 	s.app.Use(logger.New())
 }
 
-func (s *ApiServer) setupRoutes() {
+func (s *ApiServer) setupRoutes(withUI bool) {
 	// API routes
 	apiGroup := s.app.Group("/api")
 
@@ -56,8 +56,10 @@ func (s *ApiServer) setupRoutes() {
 
 	s.app.Get("/health", s.handleHealth)
 
-	// Serve UI
-	s.setupUIRoutes()
+	// Serve UI if enabled
+	if withUI {
+		s.setupUIRoutes()
+	}
 }
 
 // setupUIRoutes configures routes to serve the embedded UI

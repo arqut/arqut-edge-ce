@@ -120,7 +120,7 @@ func main() {
 	}
 
 	// Create API server
-	srv := apis.New(registry)
+	srv := apis.New(registry, true)
 
 	// Register service-specific routes
 	if err := registry.RegisterAllRoutes(srv.App()); err != nil {
