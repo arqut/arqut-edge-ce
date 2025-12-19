@@ -1,6 +1,12 @@
 package ui
 
-import "embed"
+import (
+	"embed"
+	"io/fs"
+)
 
 //go:embed dist/spa/*
-var DistFS embed.FS
+var assets embed.FS
+
+// FS contains the web ui assets.
+var FS, _ = fs.Sub(assets, "dist/spa")

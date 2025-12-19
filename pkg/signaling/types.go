@@ -24,5 +24,5 @@ type OutboundMessage struct {
 	Type string
 	From *string
 	To   *string
-	Data interface{}
+	Data any
 }

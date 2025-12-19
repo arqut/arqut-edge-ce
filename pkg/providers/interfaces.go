@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/arqut/arqut-edge-ce/pkg/storage"
+	"github.com/arqut/arqut-edge-ce/pkg/models"
 )
 
 // AuthProvider defines authentication operations
@@ -39,10 +39,10 @@ type AnalyticsProvider interface {
 
 // Event represents an analytics event
 type Event struct {
-	Type       string
-	Timestamp  time.Time
-	UserID     string
-	Data       map[string]interface{}
+	Type      string
+	Timestamp time.Time
+	UserID    string
+	Data      map[string]any
 }
 
 // MetricsQuery defines parameters for metrics retrieval
@@ -54,27 +54,27 @@ type MetricsQuery struct {
 
 // MetricsResult contains aggregated metrics
 type MetricsResult struct {
-	Data  map[string]interface{}
+	Data  map[string]any
 	Count int64
 }
 
 // IntegrationProvider defines external integration operations
 type IntegrationProvider interface {
 	// Send sends data to external systems
-	Send(ctx context.Context, destination string, payload interface{}) error
+	Send(ctx context.Context, destination string, payload any) error
 	// Receive receives data from external systems
-	Receive(ctx context.Context, source string) (interface{}, error)
+	Receive(ctx context.Context, source string) (any, error)
 }
 
 // ProxyProvider defines proxy service management operations
 type ProxyProvider interface {
 	// Service Management
-	AddService(name, localHost string, localPort int, protocol string) (*storage.ProxyService, error)
-	ModifyService(id string, config storage.ProxyServiceConfig) error
+	AddService(name, localHost string, localPort int, protocol string) (*models.ProxyService, error)
+	ModifyService(id string, config models.ProxyServiceConfig, operations ...string) error
 	DeleteService(id string) error
-	GetServices() ([]*storage.ProxyService, error)
-	GetService(id string) (*storage.ProxyService, error)
-	GetServiceByHostPort(host string, port int) (*storage.ProxyService, error)
+	// GetServices() ([]*storage.ProxyService, error)
+	// GetService(id string) (*storage.ProxyService, error)
+	// GetServiceByHostPort(host string, port int) (*storage.ProxyService, error)
 
 	// Service Control
 	EnableService(id string) error
@@ -89,4 +89,3 @@ type ProxyProvider interface {
 	SetPortRange(start, end int)
 	Clear() error
 }
-

@@ -1,0 +1,6 @@
+edge_id: ubuntu
+api_key: arq_zx9PdXL0UOUit5gq4zr3j5aAopi2Qj45HIfWkd1Z2_E
+db_path: ./arqut.db
+cloud_url: http://localhost:9200
+server_addr: :3030
+log_level: info

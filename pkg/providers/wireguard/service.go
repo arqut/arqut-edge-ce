@@ -92,13 +92,8 @@ func (s *Service) Stop(ctx context.Context) error {
 }
 
 // RegisterAPIRoutes adds WireGuard API endpoints
-func (s *Service) RegisterAPIRoutes(app interface{}) error {
-	fiberApp, ok := app.(*fiber.App)
-	if !ok {
-		return fmt.Errorf("expected *fiber.App, got %T", app)
-	}
-
-	wgAPI := fiberApp.Group("/api/wireguard")
+func (s *Service) RegisterAPIRoutes(router fiber.Router, middlewares ...fiber.Handler) {
+	wgAPI := router.Group("/wireguard", middlewares...)
 
 	// GET /api/wireguard/peers - List connected peers
 	wgAPI.Get("/peers", func(c *fiber.Ctx) error {
@@ -156,7 +151,6 @@ func (s *Service) RegisterAPIRoutes(app interface{}) error {
 	})
 
 	s.registry.Logger().Printf("[WireGuard] API routes registered")
-	return nil
 }
 
 // GetManager returns the underlying WireGuard manager (for integration with other services)

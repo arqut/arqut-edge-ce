@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/arqut/arqut-edge-ce/pkg/providers"
+	"github.com/gofiber/fiber/v2"
 )
 
 // Service implements analytics service
@@ -52,10 +53,9 @@ func (s *Service) Stop(ctx context.Context) error {
 }
 
 // RegisterAPIRoutes registers analytics-related routes
-func (s *Service) RegisterAPIRoutes(app interface{}) error {
+func (s *Service) RegisterAPIRoutes(router fiber.Router, middlewares ...fiber.Handler) {
 	// Analytics routes are handled by apiserver for now
 	// This can be moved here in the future
-	return nil
 }
 
 // Track records an analytics event
@@ -85,7 +85,7 @@ func (s *Service) GetMetrics(ctx context.Context, query providers.MetricsQuery) 
 	}
 
 	return &providers.MetricsResult{
-		Data: map[string]interface{}{
+		Data: map[string]any{
 			"total_events": count,
 		},
 		Count: count,
@@ -93,5 +93,7 @@ func (s *Service) GetMetrics(ctx context.Context, query providers.MetricsQuery) 
 }
 
 // Verify that Service implements both Service and AnalyticsProvider interfaces
-var _ providers.Service = (*Service)(nil)
-var _ providers.AnalyticsProvider = (*Service)(nil)
+var (
+	_ providers.Service           = (*Service)(nil)
+	_ providers.AnalyticsProvider = (*Service)(nil)
+)

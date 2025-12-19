@@ -22,7 +22,7 @@ export const useProxyServicesStore = defineStore('proxyServices', () => {
   }
 
   async function createService(
-    service: Partial<ProxyService>
+    service: Partial<ProxyService>,
   ): Promise<ApiResponse<ProxyService>> {
     const res = await api.post<ProxyService>('/services', service);
     if (res.success) {
@@ -32,7 +32,7 @@ export const useProxyServicesStore = defineStore('proxyServices', () => {
   }
 
   async function updateService(
-    service: ProxyService
+    service: ProxyService,
   ): Promise<ApiResponse<ProxyService>> {
     const res = await api.put<ProxyService>(`/services/${service.id}`, service);
     if (res.success) {
@@ -42,7 +42,7 @@ export const useProxyServicesStore = defineStore('proxyServices', () => {
   }
 
   async function deleteService(
-    service: ProxyService
+    service: ProxyService,
   ): Promise<ApiResponse<void>> {
     const res = await api.delete<void>(`/services/${service.id}`);
     if (res.success) {
@@ -52,11 +52,11 @@ export const useProxyServicesStore = defineStore('proxyServices', () => {
   }
 
   async function toggleService(
-    service: ProxyService
+    service: ProxyService,
   ): Promise<ApiResponse<ProxyService>> {
     const action = service.enabled ? 'disable' : 'enable';
     const res = await api.patch<ProxyService>(
-      `/services/${service.id}/${action}`
+      `/services/${service.id}/${action}`,
     );
     if (res.success) {
       await loadServices();

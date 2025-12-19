@@ -2,8 +2,6 @@ package proxy
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -18,9 +16,11 @@ import (
 
 	"github.com/arqut/arqut-edge-ce/pkg/config"
 	"github.com/arqut/arqut-edge-ce/pkg/logger"
+	"github.com/arqut/arqut-edge-ce/pkg/models"
 	"github.com/arqut/arqut-edge-ce/pkg/providers"
 	"github.com/arqut/arqut-edge-ce/pkg/signaling"
-	"github.com/arqut/arqut-edge-ce/pkg/storage"
+	"github.com/arqut/arqut-edge-ce/pkg/storage/repositories"
+	"github.com/arqut/arqut-edge-ce/pkg/utils"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -41,7 +41,8 @@ type SyncCallback struct {
 
 // ProxyProvider implements Provider using HTTP reverse proxy
 type ProxyProvider struct {
-	storage    storage.Storage
+	cfg        *config.Config
+	repo       *repositories.ServiceRepository
 	logger     *logger.Logger
 	interfaces map[string]string // interface name -> IP
 	servers    map[string]*http.Server
@@ -87,42 +88,18 @@ func (p *ProxyProvider) Name() string {
 func (p *ProxyProvider) Initialize(ctx context.Context, registry *providers.Registry) error {
 	registry.Logger().Println("Initializing proxy service")
 
-	p.storage = registry.DB()
+	cfg, ok := registry.Config().(*config.Config)
+	if !ok {
+		return fmt.Errorf("invalid config type")
+	}
+	p.cfg = cfg
+
+	p.repo = registry.DB().ServiceRepo()
 	p.logger = registry.Logger()
 
-	// Auto-migrate proxy service table
-	if err := p.storage.DB().AutoMigrate(&storage.ProxyService{}); err != nil {
-		return fmt.Errorf("failed to migrate proxy_services table: %w", err)
-	}
-
-	// Check if any services exist, if not create a default one
-	var count int64
-	if err := p.storage.DB().Model(&storage.ProxyService{}).Count(&count).Error; err != nil {
-		return fmt.Errorf("failed to count proxy services: %w", err)
-	}
-
-	if count == 0 {
-		p.logger.Println("No proxy services found, creating default service")
-		cfg, ok := registry.Config().(*config.Config)
-		if !ok {
-			return fmt.Errorf("invalid config type")
-		}
-		addr := cfg.ServerAddr
-		host, portStr, err := net.SplitHostPort(addr)
-		if err != nil {
-			return fmt.Errorf("failed to parse server address: %w", err)
-		}
-		port, err := net.LookupPort("tcp", portStr)
-		if err != nil {
-			return fmt.Errorf("failed to lookup server port: %w", err)
-		}
-		if host == "" || host == "::" || host == "0.0.0.0" {
-			host = "localhost"
-		}
-		_, err = p.AddService("Edge UI", host, port, "http")
-		if err != nil {
-			return fmt.Errorf("failed to create default proxy service: %w", err)
-		}
+	// Expose UI as service if no services exist
+	if err := p.ExposeUIAsService(); err != nil {
+		return fmt.Errorf("failed to expose UI as service: %w", err)
 	}
 
 	return nil
@@ -140,12 +117,8 @@ func (p *ProxyProvider) Stop(ctx context.Context) error {
 }
 
 // RegisterAPIRoutes registers proxy-related routes
-func (p *ProxyProvider) RegisterAPIRoutes(app interface{}) error {
-	if fiberApp, ok := app.(*fiber.App); ok {
-		p.RegisterRoutes(fiberApp)
-		return nil
-	}
-	return fmt.Errorf("invalid app type, expected *fiber.App")
+func (p *ProxyProvider) RegisterAPIRoutes(router fiber.Router, middlewares ...fiber.Handler) {
+	p.RegisterRoutes(router, middlewares...)
 }
 
 // SetSyncChannel sets the channel for sending sync messages to signaling
@@ -156,7 +129,7 @@ func (p *ProxyProvider) SetSyncChannel(ch chan<- *signaling.OutboundMessage) {
 }
 
 // syncAllServices sends all services to the cloud via signaling channel
-func (p *ProxyProvider) syncAllServices() {
+func (p *ProxyProvider) syncAllServices(remove bool) {
 	p.mu.RLock()
 	syncChan := p.syncChan
 	p.mu.RUnlock()
@@ -166,7 +139,7 @@ func (p *ProxyProvider) syncAllServices() {
 		return
 	}
 
-	services, err := p.GetServices()
+	services, err := p.repo.GetServices()
 	if err != nil {
 		if p.logger != nil {
 			p.logger.Printf("[Proxy] Failed to get services for sync: %v", err)
@@ -182,12 +155,16 @@ func (p *ProxyProvider) syncAllServices() {
 	}
 
 	// Generate unique message ID for tracking
-	messageID := generateID()
+	messageID, _ := utils.GenerateID()
+	operation := "sync"
+	if remove {
+		operation = "remove"
+	}
 
 	// Register callback before sending (batch operation)
 	p.callbackMu.Lock()
 	p.syncCallbacks[messageID] = SyncCallback{
-		operation:  "batch-sync",
+		operation:  "batch-" + operation,
 		serviceID:  fmt.Sprintf("%d services", len(services)),
 		timestamp:  time.Now(),
 		retryCount: 0,
@@ -195,9 +172,10 @@ func (p *ProxyProvider) syncAllServices() {
 	p.callbackMu.Unlock()
 
 	// Prepare sync message data
-	data := map[string]interface{}{
+	data := map[string]any{
 		"message_id": messageID,
 		"services":   services,
+		"operation":  operation,
 	}
 
 	// Send to outbound channel (non-blocking)
@@ -207,7 +185,7 @@ func (p *ProxyProvider) syncAllServices() {
 		Data: data,
 	}:
 		if p.logger != nil {
-			p.logger.Printf("[Proxy] Queued sync for %d services (msg_id: %s)", len(services), messageID)
+			p.logger.Printf("[Proxy] Queued %s for %d services (msg_id: %s)", operation, len(services), messageID)
 		}
 	default:
 		// Remove callback if we can't send
@@ -222,7 +200,7 @@ func (p *ProxyProvider) syncAllServices() {
 }
 
 // syncServiceOperation sends an individual service operation to the cloud
-func (p *ProxyProvider) syncServiceOperation(operation string, service *storage.ProxyService) {
+func (p *ProxyProvider) syncServiceOperation(operation string, service *models.ProxyService) {
 	p.mu.RLock()
 	syncChan := p.syncChan
 	p.mu.RUnlock()
@@ -233,7 +211,7 @@ func (p *ProxyProvider) syncServiceOperation(operation string, service *storage.
 	}
 
 	// Generate unique message ID for tracking
-	messageID := generateID()
+	messageID, _ := utils.GenerateID()
 
 	// Register callback before sending
 	p.callbackMu.Lock()
@@ -246,7 +224,7 @@ func (p *ProxyProvider) syncServiceOperation(operation string, service *storage.
 	p.callbackMu.Unlock()
 
 	// Prepare sync message data
-	data := map[string]interface{}{
+	data := map[string]any{
 		"message_id": messageID,
 		"operation":  operation,
 		"service":    service,
@@ -276,13 +254,13 @@ func (p *ProxyProvider) syncServiceOperation(operation string, service *storage.
 // OnReconnect is called when signaling reconnects, triggers full service sync
 func (p *ProxyProvider) OnReconnect(ctx context.Context) error {
 	p.logger.Println("[Proxy] Signaling reconnected, syncing all services")
-	p.syncAllServices()
+	p.syncAllServices(false)
 	return nil
 }
 
 // HandleServiceSyncAck processes acknowledgment from cloud server
 func (p *ProxyProvider) HandleServiceSyncAck(ctx context.Context, msg *signaling.SignallingMessage) error {
-	var ack map[string]interface{}
+	var ack map[string]any
 	if err := json.Unmarshal(msg.Data, &ack); err != nil {
 		return fmt.Errorf("failed to unmarshal ack: %w", err)
 	}
@@ -308,13 +286,12 @@ func (p *ProxyProvider) HandleServiceSyncAck(ctx context.Context, msg *signaling
 		}
 		// Future: Track success metrics here
 	} else {
-		errMsg, _ := ack["error"].(string)
 		if exists {
 			p.logger.Printf("[Proxy] Service sync failed - %s (operation: %s, service: %s)",
-				errMsg, callback.operation, callback.serviceID)
+				message, callback.operation, callback.serviceID)
 			// Future: Implement retry logic here
 		} else {
-			p.logger.Printf("[Proxy] Service sync failed - %s", errMsg)
+			p.logger.Printf("[Proxy] Service sync failed - %s", message)
 		}
 	}
 
@@ -334,8 +311,8 @@ func (p *ProxyProvider) allocatePort() (int, error) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	var usedPorts []int
-	if err := p.storage.DB().Model(&storage.ProxyService{}).Pluck("tunnel_port", &usedPorts).Error; err != nil {
+	usedPorts, err := p.repo.GetUsedPorts()
+	if err != nil {
 		return 0, fmt.Errorf("failed to get used ports: %w", err)
 	}
 
@@ -355,11 +332,6 @@ func (p *ProxyProvider) allocatePort() (int, error) {
 	}
 
 	return 0, fmt.Errorf("no available ports in range %d-%d", p.portRange.start, p.portRange.end)
-}
-
-// Clear removes all proxy services
-func (p *ProxyProvider) Clear() error {
-	return p.storage.DB().Delete(&storage.ProxyService{}, "1=1").Error
 }
 
 // Start starts the proxy service
@@ -383,7 +355,7 @@ func (p *ProxyProvider) Start(ctx context.Context) error {
 	}
 
 	// Load and start all enabled services
-	services, err := p.GetServices()
+	services, err := p.repo.GetServices()
 	if err != nil {
 		p.mu.Lock()
 		p.started = false
@@ -522,42 +494,52 @@ func (p *ProxyProvider) RemoveInterface(name string) {
 	}
 }
 
+func (p *ProxyProvider) ExposeUIAsService() error {
+	// Check if any services exist, if not create a default one
+	count, err := p.repo.Count()
+	if err != nil {
+		return fmt.Errorf("failed to count proxy services: %w", err)
+	}
+
+	if count > 0 {
+		return nil
+	}
+	p.logger.Println("No proxy services found, creating default service")
+
+	host, portStr, err := net.SplitHostPort(p.cfg.ServerAddr)
+	if err != nil {
+		return fmt.Errorf("failed to parse server address: %w", err)
+	}
+	port, err := net.LookupPort("tcp", portStr)
+	if err != nil {
+		return fmt.Errorf("failed to lookup server port: %w", err)
+	}
+	if host == "" || host == "::" || host == "0.0.0.0" {
+		host = "localhost"
+	}
+
+	tunnelPort, err := p.allocatePort()
+	if err != nil {
+		return fmt.Errorf("failed to allocate tunnel port for default service: %w", err)
+	}
+
+	_, err = p.repo.AddService("Edge UI", host, port, tunnelPort, "http")
+	if err != nil {
+		return fmt.Errorf("failed to create default proxy service: %w", err)
+	}
+	return nil
+}
+
 // AddService creates a new proxy service
-func (p *ProxyProvider) AddService(name, localHost string, localPort int, protocol string) (*storage.ProxyService, error) {
-	// Validate protocol
-	if protocol != "http" && protocol != "websocket" {
-		return nil, fmt.Errorf("unsupported protocol: %s (supported: http, websocket)", protocol)
-	}
-
-	// Validate input
-	if localPort < 1 || localPort > 65535 {
-		return nil, fmt.Errorf("invalid local port: %d", localPort)
-	}
-	if localHost == "" {
-		return nil, fmt.Errorf("local host cannot be empty")
-	}
-	if name == "" {
-		return nil, fmt.Errorf("service name cannot be empty")
-	}
-
+func (p *ProxyProvider) AddService(name, localHost string, localPort int, protocol string) (*models.ProxyService, error) {
 	// Allocate tunnel port
 	tunnelPort, err := p.allocatePort()
 	if err != nil {
 		return nil, fmt.Errorf("failed to allocate port: %w", err)
 	}
 
-	serviceID := generateID()
-	service := &storage.ProxyService{
-		ID:         serviceID,
-		Name:       name,
-		TunnelPort: tunnelPort,
-		LocalHost:  localHost,
-		LocalPort:  localPort,
-		Protocol:   protocol,
-		Enabled:    true,
-	}
-
-	if err := p.storage.DB().Create(service).Error; err != nil {
+	service, err := p.repo.AddService(name, localHost, localPort, tunnelPort, protocol)
+	if err != nil {
 		return nil, fmt.Errorf("failed to add service: %w", err)
 	}
 
@@ -580,50 +562,27 @@ func (p *ProxyProvider) AddService(name, localHost string, localPort int, protoc
 }
 
 // ModifyService updates a proxy service
-func (p *ProxyProvider) ModifyService(id string, config storage.ProxyServiceConfig) error {
-	updates := map[string]any{}
-
-	if config.Name != nil {
-		if *config.Name == "" {
-			return fmt.Errorf("service name cannot be empty")
-		}
-		updates["name"] = *config.Name
-	}
-	if config.LocalHost != nil {
-		if *config.LocalHost == "" {
-			return fmt.Errorf("local host cannot be empty")
-		}
-		updates["local_host"] = *config.LocalHost
-	}
-	if config.LocalPort != nil {
-		if *config.LocalPort < 1 || *config.LocalPort > 65535 {
-			return fmt.Errorf("invalid local port: %d", *config.LocalPort)
-		}
-		updates["local_port"] = *config.LocalPort
-	}
-	if config.Enabled != nil {
-		updates["enabled"] = *config.Enabled
-	}
-
-	if len(updates) == 0 {
-		return fmt.Errorf("no fields to update")
-	}
-
-	if err := p.storage.DB().Model(&storage.ProxyService{}).Where("id = ?", id).Updates(updates).Error; err != nil {
-		return fmt.Errorf("failed to modify service: %w", err)
+func (p *ProxyProvider) ModifyService(id string, config models.ProxyServiceConfig, operations ...string) error {
+	err := p.repo.UpdateService(id, config)
+	if err != nil {
+		return fmt.Errorf("failed to update service: %w", err)
 	}
 
 	p.restartService(id)
 
 	// Get updated service for sync
-	service, err := p.GetService(id)
+	service, err := p.repo.GetService(id)
 	if err != nil {
 		p.logger.Printf("[Proxy] Failed to get service for sync after modify: %v", err)
 		return nil // Don't fail the modify operation
 	}
 
 	// Trigger sync after successful modify
-	p.syncServiceOperation("updated", service)
+	operation := "updated"
+	if len(operations) > 0 {
+		operation = operations[0]
+	}
+	p.syncServiceOperation(operation, service)
 
 	return nil
 }
@@ -631,26 +590,26 @@ func (p *ProxyProvider) ModifyService(id string, config storage.ProxyServiceConf
 // EnableService enables a proxy service
 func (p *ProxyProvider) EnableService(id string) error {
 	enabled := true
-	return p.ModifyService(id, storage.ProxyServiceConfig{Enabled: &enabled})
+	return p.ModifyService(id, models.ProxyServiceConfig{Enabled: &enabled}, "enabled")
 }
 
 // DisableService disables a proxy service
 func (p *ProxyProvider) DisableService(id string) error {
 	enabled := false
-	return p.ModifyService(id, storage.ProxyServiceConfig{Enabled: &enabled})
+	return p.ModifyService(id, models.ProxyServiceConfig{Enabled: &enabled}, "disabled")
 }
 
 // DeleteService deletes a proxy service
 func (p *ProxyProvider) DeleteService(id string) error {
 	// Get service before deleting for sync
-	service, err := p.GetService(id)
+	service, err := p.repo.GetService(id)
 	if err != nil {
 		return fmt.Errorf("failed to get service: %w", err)
 	}
 
 	p.stopService(id)
 
-	if err := p.storage.DB().Where("id = ?", id).Delete(&storage.ProxyService{}).Error; err != nil {
+	if err := p.repo.DeleteService(id); err != nil {
 		return fmt.Errorf("failed to delete service: %w", err)
 	}
 
@@ -660,35 +619,14 @@ func (p *ProxyProvider) DeleteService(id string) error {
 	return nil
 }
 
-// GetServices returns all proxy services
-func (p *ProxyProvider) GetServices() ([]*storage.ProxyService, error) {
-	var services []*storage.ProxyService
-	if err := p.storage.DB().Order("name").Find(&services).Error; err != nil {
-		return nil, fmt.Errorf("failed to get services: %w", err)
-	}
-	return services, nil
-}
-
-// GetService returns a single proxy service by ID
-func (p *ProxyProvider) GetService(id string) (*storage.ProxyService, error) {
-	var service storage.ProxyService
-	if err := p.storage.DB().Where("id = ?", id).First(&service).Error; err != nil {
-		return nil, fmt.Errorf("failed to get service: %w", err)
-	}
-	return &service, nil
-}
-
-// GetServiceByHostPort finds a service by host and port
-func (p *ProxyProvider) GetServiceByHostPort(host string, port int) (*storage.ProxyService, error) {
-	var service storage.ProxyService
-	if err := p.storage.DB().Where("local_host = ? AND local_port = ?", host, port).First(&service).Error; err != nil {
-		return nil, fmt.Errorf("failed to get service by host/port: %w", err)
-	}
-	return &service, nil
+// Clear removes all proxy services
+func (p *ProxyProvider) Clear() error {
+	p.syncAllServices(true)
+	return p.repo.Clear()
 }
 
 // startService starts a proxy service on all interfaces
-func (p *ProxyProvider) startService(ctx context.Context, service *storage.ProxyService) error {
+func (p *ProxyProvider) startService(ctx context.Context, service *models.ProxyService) error {
 	p.mu.RLock()
 	interfaces := make(map[string]string)
 	maps.Copy(interfaces, p.interfaces)
@@ -715,7 +653,7 @@ func (p *ProxyProvider) startService(ctx context.Context, service *storage.Proxy
 }
 
 // startReverseProxyService starts a reverse proxy on a specific address
-func (p *ProxyProvider) startReverseProxyService(ctx context.Context, service *storage.ProxyService, addr string) error {
+func (p *ProxyProvider) startReverseProxyService(ctx context.Context, service *models.ProxyService, addr string) error {
 	scheme := "http"
 	if strings.ToLower(service.Protocol) == "websocket" {
 		scheme = "http" // WebSocket upgrades start as HTTP
@@ -795,7 +733,7 @@ func (p *ProxyProvider) startReverseProxyService(ctx context.Context, service *s
 func (p *ProxyProvider) restartService(id string) {
 	p.stopService(id)
 
-	service, err := p.GetService(id)
+	service, err := p.repo.GetService(id)
 	if err != nil {
 		p.logger.Printf("Failed to get service %s for restart: %v", id, err)
 		return
@@ -854,7 +792,7 @@ func (p *ProxyProvider) startServicesOnInterface(ip string) {
 		return
 	}
 
-	services, err := p.GetServices()
+	services, err := p.repo.GetServices()
 	if err != nil {
 		p.logger.Printf("Failed to get services for interface %s: %v", ip, err)
 		return
@@ -899,13 +837,6 @@ func (p *ProxyProvider) stopServicesOnInterface(ip string) {
 		}
 		cancel()
 	}
-}
-
-// generateID generates a short random ID
-func generateID() string {
-	b := make([]byte, 4)
-	rand.Read(b)
-	return hex.EncodeToString(b)
 }
 
 // Verify that ProxyProvider implements both Service and Provider interfaces

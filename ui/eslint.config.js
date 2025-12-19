@@ -11,7 +11,36 @@ export default [
 
   {
     name: 'app/files-to-ignore',
-    ignores: ['**/dist/**', '**/dist-ssr/**', '**/coverage/**', '**/.quasar/**'],
+    ignores: [
+      '**/dist/**',
+      '**/dist-ssr/**',
+      '**/coverage/**',
+      '**/.quasar/**',
+    ],
+  },
+
+  {
+    rules: {
+      languageOptions: {
+        ecmaVersion: 'latest',
+        sourceType: 'module',
+
+        globals: {
+          ...globals.browser,
+          ...globals.node, // SSR, Electron, config files
+          process: 'readonly', // process.env.*
+          ga: 'readonly', // Google Analytics
+          cordova: 'readonly',
+          Capacitor: 'readonly',
+          chrome: 'readonly', // BEX related
+          browser: 'readonly', // BEX related
+        },
+      },
+
+      // Custom rules can be added here
+      'prefer-promise-reject-errors': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
   },
 
   js.configs.recommended,

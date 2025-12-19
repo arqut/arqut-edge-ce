@@ -28,8 +28,8 @@ type Service interface {
 	Stop(ctx context.Context) error
 
 	// RegisterAPIRoutes registers HTTP routes for this service
-	// The app parameter is typically *fiber.App but uses interface{} to avoid circular imports
-	RegisterAPIRoutes(app interface{}) error
+	// The app parameter is typically fiber.Router but uses any to avoid circular imports
+	RegisterAPIRoutes(router fiber.Router, middlewares ...fiber.Handler)
 }
 
 // Registry manages service lifecycle and dependencies
@@ -38,12 +38,12 @@ type Registry struct {
 	runnable  []Service
 	db        storage.Storage
 	logger    *logger.Logger
-	config    interface{}
+	config    any
 	sigClient *signaling.Client // Signaling client for cloud connectivity (can be nil if not configured)
 }
 
 // NewRegistry creates a new service registry
-func NewRegistry(db storage.Storage, log *logger.Logger, cfg interface{}, sigClient *signaling.Client) *Registry {
+func NewRegistry(db storage.Storage, log *logger.Logger, cfg any, sigClient *signaling.Client) *Registry {
 	return &Registry{
 		services:  make(map[string]Service),
 		runnable:  make([]Service, 0),
@@ -71,8 +71,8 @@ func (r *Registry) Logger() *logger.Logger {
 	return r.logger
 }
 
-
-func (r *Registry) Config() interface{} {
+// Config returns the configuration
+func (r *Registry) Config() any {
 	return r.config
 }
 
@@ -173,18 +173,15 @@ func (r *Registry) Get(name string) (Service, error) {
 }
 
 // RegisterAllRoutes registers API routes for all services
-func (r *Registry) RegisterAllRoutes(app *fiber.App) error {
+func (r *Registry) RegisterAllRoutes(router fiber.Router, authMiddlewares ...fiber.Handler) {
 	r.logger.Info("Registering API routes for all services...")
 
 	for name, service := range r.services {
 		r.logger.Info("Registering routes for service: %s", name)
-		if err := service.RegisterAPIRoutes(app); err != nil {
-			return fmt.Errorf("failed to register routes for service %s: %w", name, err)
-		}
+		service.RegisterAPIRoutes(router, authMiddlewares...)
 	}
 
 	r.logger.Info("Routes registered for %d services", len(r.services))
-	return nil
 }
 
 // GetAuth returns the auth service with type assertion

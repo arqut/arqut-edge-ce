@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/arqut/arqut-edge-ce/pkg/providers"
+	"github.com/gofiber/fiber/v2"
 )
 
 // Service implements access control service
@@ -62,10 +63,9 @@ func (s *Service) Stop(ctx context.Context) error {
 }
 
 // RegisterAPIRoutes registers ACL-related routes
-func (s *Service) RegisterAPIRoutes(app interface{}) error {
+func (s *Service) RegisterAPIRoutes(router fiber.Router, middlewares ...fiber.Handler) {
 	// ACL routes are handled by apiserver for now
 	// This can be moved here in the future
-	return nil
 }
 
 // CheckPermission checks if a user has permission for a resource/action
@@ -104,5 +104,7 @@ func (s *Service) ListPermissions(ctx context.Context, username string) ([]provi
 }
 
 // Verify that Service implements both Service and ACLProvider interfaces
-var _ providers.Service = (*Service)(nil)
-var _ providers.ACLProvider = (*Service)(nil)
+var (
+	_ providers.Service     = (*Service)(nil)
+	_ providers.ACLProvider = (*Service)(nil)
+)

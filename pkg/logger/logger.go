@@ -67,45 +67,45 @@ func (l *Logger) SetLevel(level LogLevel) {
 }
 
 // Debug logs a debug message
-func (l *Logger) Debug(format string, v ...interface{}) {
+func (l *Logger) Debug(format string, v ...any) {
 	if l.level <= DebugLevel {
 		l.log(DebugLevel, format, v...)
 	}
 }
 
 // Info logs an informational message
-func (l *Logger) Info(format string, v ...interface{}) {
+func (l *Logger) Info(format string, v ...any) {
 	if l.level <= InfoLevel {
 		l.log(InfoLevel, format, v...)
 	}
 }
 
 // Warn logs a warning message
-func (l *Logger) Warn(format string, v ...interface{}) {
+func (l *Logger) Warn(format string, v ...any) {
 	if l.level <= WarnLevel {
 		l.log(WarnLevel, format, v...)
 	}
 }
 
 // Error logs an error message
-func (l *Logger) Error(format string, v ...interface{}) {
+func (l *Logger) Error(format string, v ...any) {
 	if l.level <= ErrorLevel {
 		l.log(ErrorLevel, format, v...)
 	}
 }
 
 // Printf provides backward compatibility with standard log.Logger
-func (l *Logger) Printf(format string, v ...interface{}) {
+func (l *Logger) Printf(format string, v ...any) {
 	l.Info(format, v...)
 }
 
 // Println provides backward compatibility with standard log.Logger
-func (l *Logger) Println(v ...interface{}) {
+func (l *Logger) Println(v ...any) {
 	l.Info("%s", fmt.Sprint(v...))
 }
 
 // log is the internal logging method
-func (l *Logger) log(level LogLevel, format string, v ...interface{}) {
+func (l *Logger) log(level LogLevel, format string, v ...any) {
 	levelStr := level.String()
 	if l.useColor {
 		levelStr = colorize(level, levelStr)

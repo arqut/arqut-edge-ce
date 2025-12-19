@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/arqut/arqut-edge-ce/pkg/logger"
+	"github.com/arqut/arqut-edge-ce/pkg/storage/repositories"
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
 	gormlogger "gorm.io/gorm/logger"
@@ -14,6 +15,8 @@ import (
 type SQLiteStorage struct {
 	db     *gorm.DB
 	logger *logger.Logger
+
+	serviceRepo *repositories.ServiceRepository
 }
 
 // NewSQLiteStorage creates a new SQLite storage instance
@@ -34,14 +37,20 @@ func NewSQLiteStorage(dbPath string, appLogger *logger.Logger) (Storage, error) 
 	}
 
 	return &SQLiteStorage{
-		db:     db,
-		logger: appLogger,
+		db:          db,
+		logger:      appLogger,
+		serviceRepo: repositories.NewServiceRepository(db),
 	}, nil
 }
 
 // DB returns the underlying GORM database instance
 func (s *SQLiteStorage) DB() *gorm.DB {
 	return s.db
+}
+
+// ServiceRepo returns the service repository
+func (s *SQLiteStorage) ServiceRepo() *repositories.ServiceRepository {
+	return s.serviceRepo
 }
 
 // Close closes the database connection

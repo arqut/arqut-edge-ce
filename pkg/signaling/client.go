@@ -4,23 +4,27 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/arqut/arqut-edge-ce/pkg/logger"
+	"github.com/arqut/arqut-edge-ce/pkg/utils"
 	"github.com/gorilla/websocket"
 )
 
 // Client handles WebSocket communication with the cloud server
 type Client struct {
-	cloudURL string
-	edgeID   string
-	apiKey   string
-	conn     *websocket.Conn
-	mutex    sync.RWMutex
-	ctx      context.Context
-	cancel   context.CancelFunc
+	cloudURL   string
+	apiKey     string
+	edgeID     string
+	serverAddr string
+	conn       *websocket.Conn
+	mutex      sync.RWMutex
+	ctx        context.Context
+	cancel     context.CancelFunc
 
 	messageHandlers   map[string]MessageHandler
 	onConnectHandlers []OnConnectHandler
@@ -36,11 +40,11 @@ type Client struct {
 
 // NewClient creates a new signaling client
 func NewClient(cloudURL string, log *logger.Logger) (*Client, error) {
-	ctx, cancel := context.WithCancel(context.Background())
+	// ctx, cancel := context.WithCancel(context.Background())
 	return &Client{
-		cloudURL:        cloudURL,
-		ctx:             ctx,
-		cancel:          cancel,
+		cloudURL: cloudURL,
+		// ctx:             ctx,
+		// cancel:          cancel,
 		messageHandlers: make(map[string]MessageHandler),
 		outboundChan:    make(chan *OutboundMessage, 100), // Buffered channel for non-blocking sends
 		logger:          log,
@@ -49,10 +53,14 @@ func NewClient(cloudURL string, log *logger.Logger) (*Client, error) {
 
 // Connect establishes WebSocket connection to the cloud server
 // This function will retry indefinitely in the background if initial connection fails
-func (c *Client) Connect(ctx context.Context, edgeID string, apiKey string) error {
+func (c *Client) Connect(ctx context.Context, apiKey string, edgeID string, serverAddr string) {
 	// Store edge ID and API key for reconnection
-	c.edgeID = edgeID
 	c.apiKey = apiKey
+	c.edgeID = edgeID
+	c.serverAddr = serverAddr
+
+	// Create a new context for the client operations
+	c.ctx, c.cancel = context.WithCancel(context.Background())
 
 	// Attempt initial connection
 	if err := c.connectOnce(ctx); err != nil {
@@ -61,10 +69,8 @@ func (c *Client) Connect(ctx context.Context, edgeID string, apiKey string) erro
 		c.logger.Printf("[Signaling] Will retry in background...")
 		go c.reconnect()
 		// Don't return error - service should continue running
-		return nil
+		return
 	}
-
-	return nil
 }
 
 // connectOnce performs a single connection attempt
@@ -77,7 +83,25 @@ func (c *Client) connectOnce(ctx context.Context) error {
 		cloudURL = "wss://" + after
 	}
 
-	wsURL := fmt.Sprintf("%s/api/v1/signaling/ws/edge?id=%s", cloudURL, c.edgeID)
+	// Append edgeServerAddr as a query parameter
+	host, portStr, err := net.SplitHostPort(c.serverAddr)
+	if err != nil {
+		return fmt.Errorf("failed to parse server address: %w", err)
+	}
+	port, err := net.LookupPort("tcp", portStr)
+	if err != nil {
+		return fmt.Errorf("failed to lookup server port: %w", err)
+	}
+	if host == "" || host == "::" || host == "0.0.0.0" {
+		host = "localhost"
+		// server listens on all interfaces, try to get actual local IPs
+		localIPs, err := utils.GetLocalIPs(true)
+		if err == nil && len(localIPs) > 0 {
+			host = strings.Join(localIPs, ",")
+		}
+	}
+
+	wsURL := fmt.Sprintf("%s/api/v1/signaling/ws/edge?id=%s&host=%s&port=%d&os=%s", cloudURL, c.edgeID, host, port, runtime.GOOS)
 
 	c.logger.Printf("[Signaling] Connecting to %s", wsURL)
 
@@ -110,7 +134,6 @@ func (c *Client) connectOnce(ctx context.Context) error {
 			c.logger.Printf("[Signaling] OnConnect handler error: %v", err)
 		}
 	}
-
 
 	// Start message reader
 	go c.readMessages()

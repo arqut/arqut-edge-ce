@@ -70,7 +70,7 @@ func (a *MainApp) Login(ctx context.Context, req LoginRequest) (*LoginResponse, 
 	_ = analytics.Track(ctx, providers.Event{
 		Type:   "login",
 		UserID: req.Username,
-		Data: map[string]interface{}{
+		Data: map[string]any{
 			"success": true,
 		},
 	})
@@ -115,7 +115,7 @@ func (a *MainApp) CheckAccess(ctx context.Context, token, resource, action strin
 	_ = analytics.Track(ctx, providers.Event{
 		Type:   "access_check",
 		UserID: username,
-		Data: map[string]interface{}{
+		Data: map[string]any{
 			"resource":   resource,
 			"action":     action,
 			"has_access": hasAccess,
@@ -126,7 +126,7 @@ func (a *MainApp) CheckAccess(ctx context.Context, token, resource, action strin
 }
 
 // SendData sends data to external integrations
-func (a *MainApp) SendData(ctx context.Context, token, destination string, data interface{}) error {
+func (a *MainApp) SendData(ctx context.Context, token, destination string, data any) error {
 	// Get auth provider
 	auth, err := a.providers.GetAuth()
 	if err != nil {
@@ -174,7 +174,7 @@ func (a *MainApp) SendData(ctx context.Context, token, destination string, data 
 	_ = analytics.Track(ctx, providers.Event{
 		Type:   "integration_send",
 		UserID: username,
-		Data: map[string]interface{}{
+		Data: map[string]any{
 			"destination": destination,
 		},
 	})

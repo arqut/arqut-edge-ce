@@ -1,11 +1,12 @@
-package apis
+package api
 
 import (
 	"context"
-	"io/fs"
+	"net/http"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/filesystem"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 
@@ -18,14 +19,16 @@ import (
 // ApiServer is the HTTP server using Fiber
 type ApiServer struct {
 	app       *fiber.App
+	api       fiber.Router
 	coreApp   core.App
 	providers *providers.Registry
 }
 
 // New creates a new HTTP server with the given service registry
-func New(p *providers.Registry, withUI bool) *ApiServer {
+func New(p *providers.Registry) *ApiServer {
 	app := fiber.New(fiber.Config{
-		ErrorHandler: customErrorHandler,
+		ErrorHandler:          customErrorHandler,
+		DisableStartupMessage: true,
 	})
 
 	s := &ApiServer{
@@ -35,7 +38,8 @@ func New(p *providers.Registry, withUI bool) *ApiServer {
 	}
 
 	s.setupMiddleware()
-	s.setupRoutes(withUI)
+	s.setupRoutes()
+	s.setupUI()
 
 	return s
 }
@@ -45,107 +49,33 @@ func (s *ApiServer) setupMiddleware() {
 	s.app.Use(logger.New())
 }
 
-func (s *ApiServer) setupRoutes(withUI bool) {
+func (s *ApiServer) setupRoutes() {
 	// API routes
-	apiGroup := s.app.Group("/api")
+	s.api = s.app.Group("/api")
 
-	apiGroup.Post("/login", s.handleLogin)
-	apiGroup.Get("/check-access", s.authMiddleware, s.handleCheckAccess)
-	apiGroup.Post("/send-data", s.authMiddleware, s.handleSendData)
-	apiGroup.Post("/metrics", s.authMiddleware, s.handleGetMetrics)
+	s.api.Post("/login", s.handleLogin)
+	s.api.Get("/check-access", s.authMiddleware, s.handleCheckAccess)
+	s.api.Post("/send-data", s.authMiddleware, s.handleSendData)
+	s.api.Post("/metrics", s.authMiddleware, s.handleGetMetrics)
 
 	s.app.Get("/health", s.handleHealth)
-
-	// Serve UI if enabled
-	if withUI {
-		s.setupUIRoutes()
-	}
 }
 
-// setupUIRoutes configures routes to serve the embedded UI
-func (s *ApiServer) setupUIRoutes() {
-	// Get the embedded filesystem
-	distFS, err := fs.Sub(ui.DistFS, "dist/spa")
-	if err != nil {
-		s.providers.Logger().Printf("Warning: Failed to setup UI filesystem: %v", err)
-		return
-	}
-
-	// Serve all static files (JS, CSS, images, fonts, etc.)
-	s.app.Use(func(c *fiber.Ctx) error {
-		// Skip API routes
-		if strings.HasPrefix(c.Path(), "/api/") || c.Path() == "/health" {
-			return c.Next()
-		}
-
-		path := strings.TrimPrefix(c.Path(), "/")
-
-		// Try to serve the file from embedded filesystem
-		file, err := distFS.Open(path)
-		if err == nil {
-			defer file.Close()
-
-			// Get file info to check if it's a directory
-			stat, err := file.Stat()
-			if err == nil && !stat.IsDir() {
-				// Set correct Content-Type based on file extension
-				setContentType(c, path)
-				return c.SendStream(file)
-			}
-		}
-
-		// If file not found or is a directory, serve index.html for SPA routing
-		indexFile, err := distFS.Open("index.html")
-		if err != nil {
-			return fiber.NewError(fiber.StatusNotFound, "UI not found")
-		}
-		defer indexFile.Close()
-
-		c.Set("Content-Type", "text/html; charset=utf-8")
-		return c.SendStream(indexFile)
-	})
-}
-
-// setContentType sets the appropriate Content-Type header based on file extension
-func setContentType(c *fiber.Ctx, path string) {
-	ext := ""
-	if idx := strings.LastIndex(path, "."); idx != -1 {
-		ext = path[idx:]
-	}
-
-	switch ext {
-	case ".js", ".mjs":
-		c.Set("Content-Type", "application/javascript; charset=utf-8")
-	case ".css":
-		c.Set("Content-Type", "text/css; charset=utf-8")
-	case ".json":
-		c.Set("Content-Type", "application/json; charset=utf-8")
-	case ".png":
-		c.Set("Content-Type", "image/png")
-	case ".jpg", ".jpeg":
-		c.Set("Content-Type", "image/jpeg")
-	case ".svg":
-		c.Set("Content-Type", "image/svg+xml")
-	case ".ico":
-		c.Set("Content-Type", "image/x-icon")
-	case ".woff":
-		c.Set("Content-Type", "font/woff")
-	case ".woff2":
-		c.Set("Content-Type", "font/woff2")
-	case ".ttf":
-		c.Set("Content-Type", "font/ttf")
-	case ".eot":
-		c.Set("Content-Type", "application/vnd.ms-fontobject")
-	case ".html":
-		c.Set("Content-Type", "text/html; charset=utf-8")
-	default:
-		c.Set("Content-Type", "application/octet-stream")
-	}
+func (s *ApiServer) setupUI() {
+	// Serve the embedded UI using Fiber's static middleware
+	s.app.Use("/", filesystem.New(filesystem.Config{
+		Root:   http.FS(ui.FS),
+		Browse: false,
+	}))
 }
 
 // App returns the underlying Fiber app for route registration
 func (s *ApiServer) App() *fiber.App {
 	return s.app
+}
+
+func (s *ApiServer) ApiRouter() fiber.Router {
+	return s.api
 }
 
 // Start starts the HTTP server
@@ -212,8 +142,8 @@ func (s *ApiServer) handleSendData(c *fiber.Ctx) error {
 	token := c.Locals("token").(string)
 
 	var reqData struct {
-		Destination string      `json:"destination"`
-		Data        interface{} `json:"data"`
+		Destination string `json:"destination"`
+		Data        any    `json:"data"`
 	}
 
 	if err := c.BodyParser(&reqData); err != nil {
@@ -275,16 +205,16 @@ func extractToken(c *fiber.Ctx) string {
 
 // customErrorHandler handles errors
 func customErrorHandler(c *fiber.Ctx, err error) error {
-	code := fiber.StatusInternalServerError
+	status := fiber.StatusInternalServerError
 
 	if e, ok := err.(*fiber.Error); ok {
-		code = e.Code
+		status = e.Code
 	}
 
-	return c.Status(code).JSON(api.ApiResponse{
+	return c.Status(status).JSON(api.ApiResponse{
 		Success: false,
 		Error: &api.ApiError{
-			Code:    code,
+			Status:  status,
 			Message: err.Error(),
 		},
 	})

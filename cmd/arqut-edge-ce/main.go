@@ -8,35 +8,34 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/arqut/arqut-edge-ce/apis"
+	"github.com/arqut/arqut-edge-ce/api"
 	"github.com/arqut/arqut-edge-ce/pkg/config"
 	"github.com/arqut/arqut-edge-ce/pkg/logger"
 	"github.com/arqut/arqut-edge-ce/pkg/providers"
-	"github.com/arqut/arqut-edge-ce/pkg/providers/acl"
-	"github.com/arqut/arqut-edge-ce/pkg/providers/analytics"
-	"github.com/arqut/arqut-edge-ce/pkg/providers/auth"
-	"github.com/arqut/arqut-edge-ce/pkg/providers/integration"
 	"github.com/arqut/arqut-edge-ce/pkg/providers/proxy"
 	"github.com/arqut/arqut-edge-ce/pkg/providers/wireguard"
 	"github.com/arqut/arqut-edge-ce/pkg/signaling"
 	"github.com/arqut/arqut-edge-ce/pkg/storage"
 )
 
+var version = "0.1.0"
+
 func main() {
+	// Create structured logger
+	appLogger := logger.NewDefault("ARQUT")
+
+	var cfgFile, logLevel string
+	flag.StringVar(&cfgFile, "config", "./arqut.yaml", "Path to configuration file")
+	flag.StringVar(&logLevel, "loglevel", "", "Set the log level")
+	flag.Parse()
+
 	// Load configuration
-	cfg, err := config.Load()
+	cfg, err := config.Load(version, cfgFile, logLevel)
 	if err != nil {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
 
-	// Create structured logger
-	appLogger := logger.NewDefault("ARQUT")
-
-	var logLevel string
-	flag.StringVar(&logLevel, "loglevel", "info", "Set the log level")
-	flag.Parse()
-
-	switch logLevel {
+	switch cfg.LogLevel {
 	case "debug":
 		appLogger.SetLevel(logger.DebugLevel)
 	case "warn":
@@ -102,15 +101,15 @@ func main() {
 		}
 
 		// Connect to signaling server
-		if cfg.EdgeID != "" && cfg.APIKey != "" {
-			if err := sigClient.Connect(ctx, cfg.EdgeID, cfg.APIKey); err != nil {
-				appLogger.Error("Failed to connect to signaling server: %v", err)
-				appLogger.Info("Will retry connection in background...")
-			} else {
-				appLogger.Info("Connected to signaling server with edge ID: %s", cfg.EdgeID)
-			}
+		if cfg.APIKey != "" && cfg.CloudURL != "" {
+			sigClient.Connect(ctx, cfg.APIKey, cfg.EdgeID, cfg.ServerAddr)
+			appLogger.Info("Connected to signaling server with edge ID: %s", cfg.EdgeID)
 		} else {
-			appLogger.Info("EDGE_ID or API_KEY not configured, skipping signaling connection")
+			appLogger.Warn("-------------------------------------------------------------------------")
+			appLogger.Warn("`api_key` or `cloud_url` is not configured, skipping signaling connection")
+			appLogger.Warn("Please configure `api_key` and `cloud_url` to enable cloud connectivity")
+			appLogger.Warn("Configuration file: %s ", cfgFile)
+			appLogger.Warn("-------------------------------------------------------------------------")
 		}
 	}
 
@@ -120,12 +119,10 @@ func main() {
 	}
 
 	// Create API server
-	srv := apis.New(registry, true)
+	srv := api.New(registry)
 
 	// Register service-specific routes
-	if err := registry.RegisterAllRoutes(srv.App()); err != nil {
-		log.Fatalf("Failed to register service routes: %v", err)
-	}
+	registry.RegisterAllRoutes(srv.ApiRouter())
 
 	// Start server in a goroutine
 	go func() {
@@ -160,10 +157,10 @@ func createServiceRegistry(store storage.Storage, log *logger.Logger, cfg *confi
 	registry := providers.NewRegistry(store, log, cfg, sigClient)
 
 	// Register all default services
-	registry.MustRegister(auth.NewService())
-	registry.MustRegister(acl.NewService())
-	registry.MustRegister(analytics.NewService())
-	registry.MustRegister(integration.NewService())
+	// registry.MustRegister(auth.NewService())
+	// registry.MustRegister(acl.NewService())
+	// registry.MustRegister(analytics.NewService())
+	// registry.MustRegister(integration.NewService())
 	registry.MustRegister(proxy.NewProxyProvider())
 	registry.MustRegister(wireguard.NewService())
 

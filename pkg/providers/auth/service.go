@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/arqut/arqut-edge-ce/pkg/providers"
+	"github.com/gofiber/fiber/v2"
 )
 
 // Service implements authentication service
@@ -66,10 +67,9 @@ func (s *Service) Stop(ctx context.Context) error {
 }
 
 // RegisterAPIRoutes registers auth-related routes
-func (s *Service) RegisterAPIRoutes(app interface{}) error {
+func (s *Service) RegisterAPIRoutes(router fiber.Router, middlewares ...fiber.Handler) {
 	// Auth routes are handled by apiserver for now
 	// This can be moved here in the future
-	return nil
 }
 
 // Authenticate validates credentials and returns a token
@@ -117,5 +117,7 @@ func generateToken(username string) string {
 }
 
 // Verify that Service implements both Service and AuthProvider interfaces
-var _ providers.Service = (*Service)(nil)
-var _ providers.AuthProvider = (*Service)(nil)
+var (
+	_ providers.Service      = (*Service)(nil)
+	_ providers.AuthProvider = (*Service)(nil)
+)

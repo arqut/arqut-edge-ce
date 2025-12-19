@@ -4,7 +4,7 @@ import (
 	"sort"
 
 	"github.com/arqut/arqut-edge-ce/pkg/api"
-	"github.com/arqut/arqut-edge-ce/pkg/storage"
+	"github.com/arqut/arqut-edge-ce/pkg/models"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -37,8 +37,8 @@ type ProxyServiceResponse struct {
 }
 
 // RegisterRoutes registers all proxy-related API routes
-func (p *ProxyProvider) RegisterRoutes(app *fiber.App) {
-	proxyAPI := app.Group("/api/services")
+func (p *ProxyProvider) RegisterRoutes(router fiber.Router, middlewares ...fiber.Handler) {
+	proxyAPI := router.Group("/services", middlewares...)
 
 	proxyAPI.Get("/", p.handleGetServices)
 	proxyAPI.Post("/", p.handleCreateService)
@@ -50,7 +50,7 @@ func (p *ProxyProvider) RegisterRoutes(app *fiber.App) {
 
 // handleGetServices handles GET /api/services - returns all proxy services
 func (p *ProxyProvider) handleGetServices(c *fiber.Ctx) error {
-	services, err := p.GetServices()
+	services, err := p.repo.GetServices()
 	if err != nil {
 		p.logger.Printf("Error getting services: %v", err)
 		return api.ErrorInternalServerErrorResp(c, "Failed to get services")
@@ -95,21 +95,7 @@ func (p *ProxyProvider) handleCreateService(c *fiber.Ctx) error {
 		return api.ErrorInternalServerErrorResp(c, "Failed to create service")
 	}
 
-	resp := ProxyServiceResponse{
-		ID:         service.ID,
-		Name:       service.Name,
-		TunnelPort: service.TunnelPort,
-		LocalHost:  service.LocalHost,
-		LocalPort:  service.LocalPort,
-		Protocol:   service.Protocol,
-		Enabled:    service.Enabled,
-		CreatedAt:  service.CreatedAt.Format("2006-01-02 15:04:05"),
-	}
-
-	return c.Status(fiber.StatusCreated).JSON(api.ApiResponse{
-		Success: true,
-		Data:    resp,
-	})
+	return api.SuccessResp(c, service)
 }
 
 // handleUpdateService handles PUT /api/services/:id - updates a proxy service
@@ -132,7 +118,7 @@ func (p *ProxyProvider) handleUpdateService(c *fiber.Ctx) error {
 		return api.ErrorBadRequestResp(c, "Local host cannot be empty")
 	}
 
-	config := storage.ProxyServiceConfig{
+	config := models.ProxyServiceConfig{
 		Name:      req.Name,
 		LocalHost: req.LocalHost,
 		LocalPort: req.LocalPort,

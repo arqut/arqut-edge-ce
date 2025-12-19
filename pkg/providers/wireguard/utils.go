@@ -94,7 +94,7 @@ func cleanupStaleWireGuardInterfaces() {
 	}
 }
 
-func copyStruct(src, dst interface{}) error {
+func copyStruct(src, dst any) error {
 	data, err := json.Marshal(src)
 	if err != nil {
 		return err

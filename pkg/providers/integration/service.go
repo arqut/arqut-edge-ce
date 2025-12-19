@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/arqut/arqut-edge-ce/pkg/providers"
+	"github.com/gofiber/fiber/v2"
 )
 
 // Service implements integration service
@@ -47,14 +48,13 @@ func (s *Service) Stop(ctx context.Context) error {
 }
 
 // RegisterAPIRoutes registers integration-related routes
-func (s *Service) RegisterAPIRoutes(app interface{}) error {
+func (s *Service) RegisterAPIRoutes(router fiber.Router, middlewares ...fiber.Handler) {
 	// Integration routes are handled by apiserver for now
 	// This can be moved here in the future
-	return nil
 }
 
 // Send sends data to an external destination
-func (s *Service) Send(ctx context.Context, destination string, payload interface{}) error {
+func (s *Service) Send(ctx context.Context, destination string, payload any) error {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -66,17 +66,19 @@ func (s *Service) Send(ctx context.Context, destination string, payload interfac
 }
 
 // Receive receives data from an external source
-func (s *Service) Receive(ctx context.Context, source string) (interface{}, error) {
+func (s *Service) Receive(ctx context.Context, source string) (any, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	// Basic implementation: return empty data
-	return map[string]interface{}{
+	return map[string]any{
 		"source": source,
 		"data":   nil,
 	}, nil
 }
 
 // Verify that Service implements both Service and IntegrationProvider interfaces
-var _ providers.Service = (*Service)(nil)
-var _ providers.IntegrationProvider = (*Service)(nil)
+var (
+	_ providers.Service             = (*Service)(nil)
+	_ providers.IntegrationProvider = (*Service)(nil)
+)
