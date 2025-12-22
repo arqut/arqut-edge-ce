@@ -5,7 +5,7 @@ import (
 	"io/fs"
 )
 
-//go:embed dist/spa/*
+//go:embed all:dist/spa
 var assets embed.FS
 
 // FS contains the web ui assets.
