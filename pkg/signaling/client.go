@@ -18,6 +18,7 @@ import (
 // Client handles WebSocket communication with the cloud server
 type Client struct {
 	cloudURL   string
+	apiPath    string // API path prefix (e.g., "/api/v1" or "/v1")
 	apiKey     string
 	edgeID     string
 	serverAddr string
@@ -38,13 +39,16 @@ type Client struct {
 	reconnectMutex sync.Mutex
 }
 
-// NewClient creates a new signaling client
+// NewClient creates a new signaling client with default API path "/api/v1"
 func NewClient(cloudURL string, log *logger.Logger) (*Client, error) {
-	// ctx, cancel := context.WithCancel(context.Background())
+	return NewClientWithPath(cloudURL, "/api/v1", log)
+}
+
+// NewClientWithPath creates a new signaling client with custom API path
+func NewClientWithPath(cloudURL string, apiPath string, log *logger.Logger) (*Client, error) {
 	return &Client{
-		cloudURL: cloudURL,
-		// ctx:             ctx,
-		// cancel:          cancel,
+		cloudURL:        cloudURL,
+		apiPath:         apiPath,
 		messageHandlers: make(map[string]MessageHandler),
 		outboundChan:    make(chan *OutboundMessage, 100), // Buffered channel for non-blocking sends
 		logger:          log,
@@ -59,8 +63,8 @@ func (c *Client) Connect(ctx context.Context, apiKey string, edgeID string, serv
 	c.edgeID = edgeID
 	c.serverAddr = serverAddr
 
-	// Create a new context for the client operations
-	c.ctx, c.cancel = context.WithCancel(context.Background())
+	// Create a new context for the client operations, derived from parent context
+	c.ctx, c.cancel = context.WithCancel(ctx)
 
 	// Attempt initial connection
 	if err := c.connectOnce(ctx); err != nil {
@@ -101,7 +105,7 @@ func (c *Client) connectOnce(ctx context.Context) error {
 		}
 	}
 
-	wsURL := fmt.Sprintf("%s/api/v1/signaling/ws/edge?id=%s&host=%s&port=%d&os=%s", cloudURL, c.edgeID, host, port, runtime.GOOS)
+	wsURL := fmt.Sprintf("%s%s/signaling/ws/edge?id=%s&host=%s&port=%d&os=%s", cloudURL, c.apiPath, c.edgeID, host, port, runtime.GOOS)
 
 	c.logger.Printf("[Signaling] Connecting to %s", wsURL)
 

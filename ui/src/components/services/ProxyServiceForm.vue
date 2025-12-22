@@ -1,10 +1,22 @@
 <template>
-  <q-form @submit="onSubmit" class="q-pa-md">
+  <q-form @submit="onSubmit" class="service-form q-pa-md">
     <q-card flat>
       <!-- Header -->
       <q-card-section>
-        <div class="text-h6">
-          {{ isEdit ? `Edit Service: ${formData.name}` : 'Create Service' }}
+        <div class="row items-center justify-between">
+          <div class="text-title-large">
+            {{ isEdit ? 'Edit Service' : 'Create Service' }}
+          </div>
+          <q-btn
+            flat
+            round
+            icon="close"
+            size="sm"
+            @click="onCancel"
+          />
+        </div>
+        <div v-if="isEdit" class="text-body-medium text-on-surface-variant q-mt-xs">
+          {{ formData.name }}
         </div>
       </q-card-section>
 
@@ -12,38 +24,49 @@
 
       <!-- Form Fields -->
       <q-card-section>
-        <div class="q-gutter-md">
+        <div class="q-gutter-lg">
           <!-- Service Name -->
           <q-input
             v-model="formData.name"
             label="Service Name"
             outlined
-            dense
             :disable="isRunning"
             :rules="[val => !!val || 'Name is required']"
             autofocus
-          />
+          >
+            <template v-slot:prepend>
+              <q-icon name="label" />
+            </template>
+          </q-input>
 
           <!-- Protocol Selector -->
           <q-select
             v-model="formData.protocol"
             label="Protocol"
-            :options="['http', 'ws']"
+            :options="protocolOptions"
             outlined
-            dense
+            emit-value
+            map-options
             :disable="isRunning"
-          />
+          >
+            <template v-slot:prepend>
+              <q-icon name="http" />
+            </template>
+          </q-select>
 
           <!-- Host Input -->
           <q-input
             v-model="formData.local_host"
             label="Local Host"
             outlined
-            dense
             :disable="isRunning"
             :rules="[val => !!val || 'Host is required']"
             hint="Use 'localhost' for local services"
-          />
+          >
+            <template v-slot:prepend>
+              <q-icon name="computer" />
+            </template>
+          </q-input>
 
           <!-- Port Input -->
           <q-input
@@ -51,64 +74,75 @@
             type="number"
             label="Local Port"
             outlined
-            dense
             :disable="isRunning"
             :rules="[
               val => !!val || 'Port is required',
               val => val > 0 && val < 65536 || 'Port must be between 1 and 65535'
             ]"
-          />
+          >
+            <template v-slot:prepend>
+              <q-icon name="lan" />
+            </template>
+          </q-input>
 
           <!-- Service URL Preview -->
-          <q-banner v-if="serviceUrl" class="bg-grey-2">
-            <div class="text-caption text-grey-8">Service URL:</div>
-            <div class="text-body2 text-primary">{{ serviceUrl }}</div>
-            <template v-slot:action>
+          <div v-if="serviceUrl" class="url-preview q-pa-md">
+            <div class="text-label-medium text-on-surface-variant q-mb-xs">
+              Service URL
+            </div>
+            <div class="row items-center justify-between">
+              <code class="text-body-medium text-primary">{{ serviceUrl }}</code>
               <q-btn
                 flat
                 round
                 dense
                 icon="content_copy"
+                size="sm"
                 @click="copyUrl"
               >
                 <q-tooltip>Copy URL</q-tooltip>
               </q-btn>
-            </template>
-          </q-banner>
+            </div>
+          </div>
 
           <!-- Extension point for EN form fields -->
           <slot name="additional-fields" :service="formData" />
         </div>
       </q-card-section>
 
+      <!-- Warning for running services -->
+      <q-card-section v-if="isRunning" class="q-pt-none">
+        <q-banner class="warning-banner">
+          <template v-slot:avatar>
+            <q-icon name="warning" />
+          </template>
+          <div class="text-label-large">Service is running</div>
+          <div class="text-body-small">Stop the service before making changes</div>
+        </q-banner>
+      </q-card-section>
+
       <q-separator />
 
       <!-- Actions -->
-      <q-card-actions align="right">
+      <q-card-actions class="q-pa-md" align="right">
         <q-btn
           flat
+          no-caps
           label="Cancel"
-          color="grey"
+          class="action-btn"
           @click="onCancel"
         />
         <q-btn
+          unelevated
+          no-caps
           type="submit"
           label="Save"
           color="primary"
+          class="action-btn"
           :loading="submitting"
           :disable="isRunning"
         />
       </q-card-actions>
-
-      <!-- Warning for running services -->
-      <q-card-section v-if="isRunning">
-        <q-banner class="bg-warning text-white">
-          <template v-slot:avatar>
-            <q-icon name="warning" color="white" />
-          </template>
-          This service is currently running. Stop it before making changes.
-        </q-banner>
-      </q-card-section>
     </q-card>
   </q-form>
 </template>
@@ -133,6 +167,11 @@ const ui = useUiStore();
 
 const formData = ref<ProxyService>({ ...props.service });
 const submitting = ref(false);
+
+const protocolOptions = [
+  { label: 'HTTP', value: 'http' },
+  { label: 'WebSocket', value: 'ws' },
+];
 
 const isEdit = computed(() => !!props.service.id);
 const isRunning = computed(() => formData.value.enabled);
@@ -177,3 +216,42 @@ function copyUrl() {
     });
 }
 </script>
+
+<style lang="scss">
+.service-form {
+  min-width: 360px;
+
+  .url-preview {
+    background-color: #EAEBE5;
+    border-radius: 8px;
+
+    code {
+      font-family: 'Roboto Mono', monospace;
+      word-break: break-all;
+    }
+  }
+
+  .warning-banner {
+    background-color: #FFF3E0 !important;
+    color: #E65100 !important;
+    border-radius: 12px;
+  }
+
+  .action-btn {
+    min-height: 40px;
+    padding: 0 16px;
+    min-width: 80px;
+  }
+}
+
+body.body--dark .service-form {
+  .url-preview {
+    background-color: #282B25;
+  }
+
+  .warning-banner {
+    background-color: #3D2600 !important;
+    color: #FFB74D !important;
+  }
+}
+</style>

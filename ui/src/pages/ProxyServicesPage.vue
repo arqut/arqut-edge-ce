@@ -1,13 +1,14 @@
 <template>
-  <q-page class="q-pa-md">
+  <q-page class="services-page q-pa-md">
     <!-- Header -->
-    <div class="row justify-between items-center q-mb-md">
-      <div class="text-h6 text-primary">Services</div>
+    <div class="row justify-between items-center q-mb-lg">
+      <div class="text-title-large text-primary">Services</div>
       <div class="row q-gutter-sm">
         <!-- Extension point for EN header actions -->
         <slot name="header-actions" />
 
         <q-btn
+          unelevated
           no-caps
           color="primary"
           icon="add"
@@ -17,18 +18,18 @@
       </div>
     </div>
 
-    <!-- Services List -->
-    <q-card flat bordered class="">
+    <!-- Services Card -->
+    <q-card flat bordered class="services-card">
       <!-- Table Header -->
-      <div class="row q-px-md q-py-sm">
+      <div class="table-header row q-px-md q-py-sm items-center">
         <div class="col-4 row items-center">
-          <span class="text-subtitle2">Name</span>
+          <span class="text-label-large">Name</span>
         </div>
-        <div class="col-2 row items-center justify-center desktop-only">
-          <span class="text-subtitle2">Status</span>
+        <div v-if="isDesktop" class="col-2 row items-center justify-center">
+          <span class="text-label-large">Status</span>
         </div>
-        <div class="col-2 row items-center justify-center desktop-only">
-          <span class="text-subtitle2">Created</span>
+        <div v-if="isDesktop" class="col-2 row items-center justify-center">
+          <span class="text-label-large">Created</span>
         </div>
         <div class="col-4 row items-center justify-end">
           <q-btn
@@ -37,7 +38,9 @@
             icon="refresh"
             :loading="proxyServices.loading"
             @click="proxyServices.loadServices()"
-          />
+          >
+            <q-tooltip>Refresh</q-tooltip>
+          </q-btn>
         </div>
       </div>
 
@@ -48,13 +51,13 @@
         v-if="proxyServices.loading && services.length === 0"
         class="q-pa-md"
       >
-        <q-skeleton type="rect" height="60px" class="q-mb-md" />
-        <q-skeleton type="rect" height="60px" class="q-mb-md" />
-        <q-skeleton type="rect" height="60px" />
+        <q-skeleton type="rect" height="72px" class="q-mb-sm" />
+        <q-skeleton type="rect" height="72px" class="q-mb-sm" />
+        <q-skeleton type="rect" height="72px" />
       </div>
 
       <!-- Services List -->
-      <q-list v-else-if="services.length > 0" separator>
+      <q-list v-else-if="services.length > 0" separator class="services-list">
         <q-item
           v-for="service in services"
           :key="service.id"
@@ -62,34 +65,35 @@
           class="service-item q-py-md"
         >
           <!-- Mobile Avatar -->
-          <q-item-section avatar top class="mobile-only">
+          <q-item-section v-if="isMobile" avatar top>
             <q-avatar
               :icon="service.enabled ? 'check_circle' : 'cancel'"
-              :color="service.enabled ? 'positive' : 'grey'"
+              :color="service.enabled ? 'positive' : 'grey-6'"
               text-color="white"
+              size="40px"
             />
           </q-item-section>
 
           <!-- Service Name -->
-          <q-item-section class="col-md-4">
-            <q-item-label class="text-subtitle2">
+          <q-item-section :class="isDesktop ? 'col-4' : ''">
+            <q-item-label class="text-title-medium">
               {{ service.name }}
             </q-item-label>
-            <q-item-label caption class="mobile-only">
+            <q-item-label v-if="isMobile" caption class="text-body-small">
               {{ service.protocol }}://{{ service.local_host }}:{{
                 service.local_port
               }}
             </q-item-label>
-            <q-item-label v-if="service.created_at" caption class="mobile-only">
+            <q-item-label v-if="isMobile && service.created_at" caption class="text-body-small">
               Created: {{ formatDate(service.created_at) }}
             </q-item-label>
           </q-item-section>
 
           <!-- Status Badge (Desktop) -->
-          <q-item-section class="col-2 text-center desktop-only ml-0">
+          <q-item-section v-if="isDesktop" class="col-2 text-center ml-0">
             <div>
               <q-badge
-                :color="service.enabled ? 'positive' : 'grey'"
+                :color="service.enabled ? 'positive' : 'grey-6'"
                 text-color="white"
               >
                 {{ service.enabled ? 'Active' : 'Inactive' }}
@@ -99,16 +103,16 @@
 
           <!-- Created Date (Desktop) -->
           <q-item-section
-            v-if="service.created_at"
-            class="col-2 text-center desktop-only ml-0"
+            v-if="isDesktop && service.created_at"
+            class="col-2 text-center ml-0"
           >
-            <q-item-label caption>
+            <q-item-label caption class="text-body-small">
               {{ formatDate(service.created_at) }}
             </q-item-label>
           </q-item-section>
 
           <!-- Actions (Desktop) -->
-          <q-item-section class="col-4 desktop-only ml-0">
+          <q-item-section v-if="isDesktop" class="col-4 ml-0">
             <div class="row justify-end action-buttons">
               <!-- Extension point for EN service actions -->
               <slot name="service-actions" :service="service" />
@@ -117,7 +121,6 @@
                 flat
                 round
                 :icon="service.enabled ? 'stop_circle' : 'play_circle'"
-                color="grey"
                 size="sm"
                 @click.stop="toggleService(service)"
               >
@@ -127,7 +130,6 @@
                 flat
                 round
                 icon="edit"
-                color="grey"
                 size="sm"
                 @click.stop="updateService(service)"
               >
@@ -136,9 +138,9 @@
               <q-btn
                 flat
                 round
-                icon="delete_forever"
-                color="grey"
+                icon="delete_outline"
                 size="sm"
+                class="text-negative"
                 @click.stop="deleteService(service)"
               >
                 <q-tooltip>Delete</q-tooltip>
@@ -147,16 +149,22 @@
           </q-item-section>
 
           <!-- Actions Menu (Mobile) -->
-          <q-item-section side class="mobile-only">
+          <q-item-section v-if="isMobile" side>
             <q-btn dense flat round icon="more_vert" size="sm">
               <q-menu auto-close>
-                <q-list dense style="min-width: 150px">
+                <q-list dense style="min-width: 180px">
                   <q-item clickable @click="toggleService(service)">
+                    <q-item-section avatar>
+                      <q-icon :name="service.enabled ? 'stop_circle' : 'play_circle'" />
+                    </q-item-section>
                     <q-item-section>
                       {{ service.enabled ? 'Stop' : 'Start' }}
                     </q-item-section>
                   </q-item>
                   <q-item clickable @click="updateService(service)">
+                    <q-item-section avatar>
+                      <q-icon name="edit" />
+                    </q-item-section>
                     <q-item-section>Edit</q-item-section>
                   </q-item>
 
@@ -165,9 +173,10 @@
 
                   <q-separator />
                   <q-item clickable @click="deleteService(service)">
-                    <q-item-section class="text-negative"
-                      >Delete</q-item-section
-                    >
+                    <q-item-section avatar>
+                      <q-icon name="delete_outline" color="negative" />
+                    </q-item-section>
+                    <q-item-section class="text-negative">Delete</q-item-section>
                   </q-item>
                 </q-list>
               </q-menu>
@@ -177,8 +186,20 @@
       </q-list>
 
       <!-- Empty State -->
-      <div v-else class="text-center text-grey text-italic q-pa-lg">
-        No services found. Create your first service to get started.
+      <div v-else class="empty-state text-center q-pa-xl">
+        <q-icon name="dns" size="64px" class="q-mb-md text-on-surface-variant" style="opacity: 0.5" />
+        <div class="text-title-medium q-mb-sm">No services found</div>
+        <div class="text-body-medium text-on-surface-variant q-mb-lg">
+          Create your first service to get started
+        </div>
+        <q-btn
+          unelevated
+          no-caps
+          color="primary"
+          icon="add"
+          label="Create Service"
+          @click="createService"
+        />
       </div>
     </q-card>
 
@@ -188,7 +209,8 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, markRaw } from 'vue';
+import { computed, onMounted, markRaw } from 'vue';
+import { useQuasar } from 'quasar';
 import { storeToRefs } from 'pinia';
 import { useProxyServicesStore } from '../stores/proxyServices';
 import { useDrawerStore } from '../stores/drawer';
@@ -197,11 +219,18 @@ import { formatDate } from '../utils/format';
 import type { ProxyService } from '../types/models';
 import ProxyServiceForm from '../components/services/ProxyServiceForm.vue';
 
+const $q = useQuasar();
 const proxyServices = useProxyServicesStore();
 const drawer = useDrawerStore();
 const ui = useUiStore();
 
 const { services } = storeToRefs(proxyServices);
+
+// Responsive breakpoints using Quasar's reactive screen object
+// Desktop: >= 1024px (md breakpoint and above)
+// Mobile: < 1024px (below md breakpoint)
+const isDesktop = computed(() => $q.screen.gt.sm);
+const isMobile = computed(() => $q.screen.lt.md);
 
 onMounted(() => {
   ui.setTitle('Services');
@@ -250,7 +279,31 @@ function deleteService(service: ProxyService) {
   });
 }
 </script>
-<style scoped>
+
+<style lang="scss" scoped>
+.services-page {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.services-card {
+  overflow: hidden;
+}
+
+.table-header {
+  min-height: 48px;
+}
+
+.services-list {
+  .q-item {
+    min-height: 72px;
+  }
+}
+
+.empty-state {
+  padding: 48px 24px;
+}
+
 .ml-0 {
   margin-left: 0px !important;
 }

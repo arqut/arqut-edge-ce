@@ -1,28 +1,615 @@
-// App global styles
+// App global styles - Material Design 3
+@import 'quasar.variables';
 
+// ============================================
+// MD3 Theme Application
+// ============================================
+
+body {
+  background-color: $surface-light;
+  color: $on-surface-light;
+}
+
+body.body--dark {
+  background-color: $surface-dark;
+  color: $on-surface-dark;
+}
+
+// ============================================
+// Light Theme
+// ============================================
+
+.q-page {
+  background-color: $surface-light;
+}
+
+.q-drawer {
+  background-color: $surface-container-light !important;
+}
+
+.q-header {
+  background-color: $surface-container-light !important;
+  color: $on-surface-light;
+}
+
+// ============================================
+// Dark Theme
+// ============================================
+
+body.body--dark {
+  .q-page {
+    background-color: $surface-dark;
+  }
+
+  .q-drawer {
+    background-color: $surface-container-dark !important;
+  }
+
+  .q-header {
+    background-color: $surface-container-dark !important;
+    color: $on-surface-dark;
+  }
+
+  .q-card {
+    background-color: $surface-container-high-dark;
+    color: $on-surface-dark;
+  }
+
+  .q-item {
+    color: $on-surface-dark;
+  }
+
+  .q-separator {
+    background-color: $outline-dark;
+  }
+
+  .q-btn.bg-primary {
+    background-color: $primary-dark-theme !important;
+    color: $on-primary-dark-theme !important;
+  }
+
+  .q-badge.bg-positive {
+    background-color: #4CAF50 !important;
+  }
+
+  .q-badge.bg-grey,
+  .q-badge.bg-grey-6 {
+    background-color: $surface-container-highest-dark !important;
+    color: $on-surface-variant-dark !important;
+  }
+
+  .text-grey,
+  .text-grey-8 {
+    color: $on-surface-variant-dark !important;
+  }
+
+  .bg-grey-2 {
+    background-color: $surface-container-high-dark !important;
+  }
+
+  // Navigation active state
+  .q-item--active,
+  .q-item.q-router-link--active {
+    background-color: $primary-container-dark !important;
+    color: $on-primary-container-dark !important;
+  }
+}
+
+// ============================================
+// MD3 Cards
+// ============================================
+
+.q-card {
+  background-color: $surface-container-high-light;
+  border-radius: $card-border-radius !important;
+
+  &.q-card--flat {
+    box-shadow: none;
+  }
+
+  &.q-card--bordered {
+    border: 1px solid $outline-light;
+  }
+}
+
+body.body--dark .q-card {
+  border-color: $outline-dark;
+}
+
+// ============================================
+// MD3 Buttons
+// ============================================
+
+.q-btn {
+  border-radius: $button-border-radius !important;
+  text-transform: none;
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: 0.1px;
+}
+
+// Filled button
+.q-btn.bg-primary {
+  background-color: $primary !important;
+  color: $on-primary !important;
+  box-shadow: none;
+
+  &:hover {
+    box-shadow: $elevation-1;
+  }
+}
+
+// Text button
+.q-btn--flat {
+  color: $primary;
+
+  &:hover {
+    background-color: rgba(74, 103, 65, 0.08);
+  }
+
+  &.text-grey {
+    color: $on-surface-variant-light;
+  }
+
+  &.text-negative {
+    color: $negative;
+
+    &:hover {
+      background-color: rgba(186, 26, 26, 0.08);
+    }
+  }
+}
+
+body.body--dark .q-btn--flat {
+  color: $primary-dark-theme;
+
+  &:hover {
+    background-color: rgba(176, 204, 171, 0.08);
+  }
+
+  &.text-grey {
+    color: $on-surface-variant-dark;
+  }
+
+  &.text-negative {
+    color: #F2B8B5;
+
+    &:hover {
+      background-color: rgba(242, 184, 181, 0.08);
+    }
+  }
+}
+
+// Icon button
+.q-btn--round.q-btn--flat {
+  &:hover {
+    background-color: rgba($on-surface-light, 0.08);
+  }
+}
+
+body.body--dark .q-btn--round.q-btn--flat:hover {
+  background-color: rgba($on-surface-dark, 0.08);
+}
+
+// ============================================
+// MD3 Outlined Text Fields
+// ============================================
+
+.q-field--outlined {
+  .q-field__control {
+    border-radius: $input-border-radius;
+    padding: 0 16px;
+
+    &:before {
+      border-color: $outline-light;
+      border-radius: $input-border-radius;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    &:hover:before {
+      border-color: $on-surface-light;
+    }
+  }
+
+  &.q-field--focused .q-field__control:before {
+    border-color: $primary;
+    border-width: 2px;
+  }
+
+  .q-field__label {
+    color: $on-surface-variant-light;
+  }
+
+  &.q-field--focused .q-field__label {
+    color: $primary;
+  }
+
+  .q-field__native,
+  .q-field__input {
+    color: $on-surface-light;
+  }
+}
+
+body.body--dark .q-field--outlined {
+  .q-field__control {
+    &:before {
+      border-color: $outline-dark;
+    }
+
+    &:hover:before {
+      border-color: $on-surface-dark;
+    }
+  }
+
+  &.q-field--focused .q-field__control:before {
+    border-color: $primary-dark-theme;
+  }
+
+  .q-field__label {
+    color: $on-surface-variant-dark;
+  }
+
+  &.q-field--focused .q-field__label {
+    color: $primary-dark-theme;
+  }
+
+  .q-field__native,
+  .q-field__input {
+    color: $on-surface-dark;
+  }
+}
+
+// ============================================
+// MD3 Select
+// ============================================
+
+.q-select {
+  .q-field__native {
+    color: $on-surface-light;
+  }
+}
+
+body.body--dark .q-select .q-field__native {
+  color: $on-surface-dark;
+}
+
+// ============================================
+// MD3 Lists
+// ============================================
+
+.q-list {
+  .q-item {
+    min-height: 56px;
+
+    &:hover {
+      background-color: rgba($on-surface-light, 0.08);
+    }
+
+    &--active,
+    &.q-router-link--active {
+      background-color: $primary-container;
+      color: $on-primary-container;
+
+      .q-icon {
+        color: $on-primary-container;
+      }
+    }
+  }
+}
+
+body.body--dark .q-list .q-item:hover {
+  background-color: rgba($on-surface-dark, 0.08);
+}
+
+// ============================================
+// MD3 Navigation Drawer
+// ============================================
+
+.q-drawer {
+  .q-item {
+    margin: 4px 12px;
+    border-radius: 100px;
+    padding: 0 24px;
+
+    &--active,
+    &.q-router-link--active {
+      background-color: $primary-container;
+      color: $on-primary-container;
+
+      .q-icon {
+        color: $on-primary-container;
+      }
+    }
+  }
+}
+
+body.body--dark .q-drawer .q-item {
+  &--active,
+  &.q-router-link--active {
+    background-color: $primary-container-dark;
+    color: $on-primary-container-dark;
+
+    .q-icon {
+      color: $on-primary-container-dark;
+    }
+  }
+}
+
+// ============================================
+// MD3 Badges
+// ============================================
+
+.q-badge {
+  border-radius: $shape-corner-small;
+  padding: 4px 12px;
+  font-weight: 500;
+  font-size: 12px;
+}
+
+// ============================================
+// MD3 Separators
+// ============================================
+
+.q-separator {
+  background-color: $outline-light;
+}
+
+body.body--dark .q-separator {
+  background-color: $outline-dark;
+}
+
+// ============================================
+// MD3 Dialogs
+// ============================================
+
+.q-dialog__inner > .q-card {
+  border-radius: 28px !important;
+  padding: 8px;
+}
+
+// ============================================
+// MD3 Menus
+// ============================================
+
+.q-menu {
+  border-radius: $shape-corner-small;
+  box-shadow: $elevation-2;
+  background-color: $surface-container-light;
+
+  .q-item {
+    border-radius: 0;
+    margin: 0;
+  }
+}
+
+body.body--dark .q-menu {
+  background-color: $surface-container-high-dark;
+}
+
+// ============================================
+// MD3 Tooltips
+// ============================================
+
+.q-tooltip {
+  border-radius: 4px;
+  background-color: $on-surface-light;
+  color: $surface-light;
+  font-size: 12px;
+  padding: 4px 8px;
+}
+
+body.body--dark .q-tooltip {
+  background-color: $surface-container-highest-dark;
+  color: $on-surface-dark;
+}
+
+// ============================================
+// MD3 Skeletons
+// ============================================
+
+.q-skeleton {
+  border-radius: $shape-corner-small;
+  background-color: $surface-container-high-light;
+}
+
+body.body--dark .q-skeleton {
+  background-color: $surface-container-high-dark;
+}
+
+// ============================================
+// MD3 Banners
+// ============================================
+
+.q-banner {
+  border-radius: $shape-corner-medium;
+  background-color: $surface-container-high-light;
+}
+
+body.body--dark .q-banner {
+  background-color: $surface-container-high-dark;
+}
+
+// ============================================
+// MD3 Toggle
+// ============================================
+
+.q-toggle {
+  .q-toggle__inner--truthy {
+    .q-toggle__track {
+      background-color: $primary-container !important;
+    }
+    .q-toggle__thumb {
+      background-color: $primary !important;
+    }
+  }
+}
+
+body.body--dark .q-toggle {
+  .q-toggle__inner--truthy {
+    .q-toggle__track {
+      background-color: $primary-container-dark !important;
+    }
+    .q-toggle__thumb {
+      background-color: $primary-dark-theme !important;
+    }
+  }
+}
+
+// ============================================
 // Responsive utility classes
+// ============================================
+// Breakpoint: 1024px
+// Mobile: screens < 1024px (max-width: 1023px)
+// Desktop: screens >= 1024px (min-width: 1024px)
+
+// Desktop-only: visible on desktop, hidden on mobile
 .desktop-only {
-  @media (max-width: 1023px) {
+  @media screen and (max-width: 1023px) {
     display: none !important;
+    visibility: hidden !important;
   }
 }
 
+// Mobile-only: hidden by default, visible only on mobile
+// We set display:none as default and override on mobile
 .mobile-only {
-  @media (min-width: 1024px) {
-    display: none !important;
+  display: none !important;
+  visibility: hidden !important;
+}
+
+// Mobile styles - show mobile-only elements
+@media screen and (max-width: 1023px) {
+  // Generic mobile-only reset
+  .mobile-only {
+    display: block !important;
+    visibility: visible !important;
+  }
+
+  // Quasar q-item-section renders as .q-item__section (BEM naming)
+  // Target both the Vue component name and rendered class
+  .q-item__section.mobile-only,
+  div[class*="q-item__section"].mobile-only {
+    display: flex !important;
+    visibility: visible !important;
+  }
+
+  // Quasar q-item-label
+  .q-item__label.mobile-only,
+  .q-item-label.mobile-only {
+    display: block !important;
+    visibility: visible !important;
+  }
+
+  // Standard HTML elements
+  div.mobile-only {
+    display: block !important;
+    visibility: visible !important;
+  }
+
+  span.mobile-only {
+    display: inline !important;
+    visibility: visible !important;
+  }
+
+  // Table header divs
+  .table-header div.mobile-only {
+    display: flex !important;
+    visibility: visible !important;
   }
 }
 
-// Service list item hover effects
+// ============================================
+// Service list item
+// ============================================
+
 .service-item {
   transition: background-color 0.2s ease;
 
   &:hover {
-    background-color: rgba(0, 0, 0, 0.03);
+    background-color: rgba($on-surface-light, 0.08);
   }
+}
+
+body.body--dark .service-item:hover {
+  background-color: rgba($on-surface-dark, 0.08);
 }
 
 .action-buttons {
   display: flex;
   gap: 4px;
+}
+
+// ============================================
+// MD3 Typography helpers
+// ============================================
+
+.text-title-large {
+  font-size: $typography-title-large;
+  font-weight: 400;
+  line-height: 28px;
+}
+
+.text-title-medium {
+  font-size: $typography-title-medium;
+  font-weight: 500;
+  line-height: 24px;
+  letter-spacing: 0.15px;
+}
+
+.text-title-small {
+  font-size: $typography-title-small;
+  font-weight: 500;
+  line-height: 20px;
+  letter-spacing: 0.1px;
+}
+
+.text-body-large {
+  font-size: $typography-body-large;
+  font-weight: 400;
+  line-height: 24px;
+  letter-spacing: 0.5px;
+}
+
+.text-body-medium {
+  font-size: $typography-body-medium;
+  font-weight: 400;
+  line-height: 20px;
+  letter-spacing: 0.25px;
+}
+
+.text-body-small {
+  font-size: $typography-body-small;
+  font-weight: 400;
+  line-height: 16px;
+  letter-spacing: 0.4px;
+}
+
+.text-label-large {
+  font-size: $typography-label-large;
+  font-weight: 500;
+  line-height: 20px;
+  letter-spacing: 0.1px;
+}
+
+.text-label-medium {
+  font-size: $typography-label-medium;
+  font-weight: 500;
+  line-height: 16px;
+  letter-spacing: 0.5px;
+}
+
+.text-label-small {
+  font-size: $typography-label-small;
+  font-weight: 500;
+  line-height: 16px;
+  letter-spacing: 0.5px;
+}
+
+// Color helpers
+.text-on-surface-variant {
+  color: $on-surface-variant-light;
+}
+
+body.body--dark .text-on-surface-variant {
+  color: $on-surface-variant-dark;
 }

@@ -1,16 +1,89 @@
 // Quasar SCSS Variables
-// Arqut Edge branding colors
+// Material Design 3 - Arqut Edge Theme
 
-$primary   : #69a541;
-$secondary : #69a641;
-$accent    : #9C27B0;
+// ============================================
+// MD3 Color Tokens - Light Theme
+// ============================================
 
-$dark      : #3b4c56;
-$dark-page : #121212;
+$primary: #4A6741;
+$on-primary: #FFFFFF;
+$primary-container: #CBE8C0;
+$on-primary-container: #1A2E00;
 
-$positive  : #21BA45;
-$negative  : #C10015;
-$info      : #31CCEC;
-$warning   : #F2C037;
+$secondary: #4A6741;
+$accent: #4A6741;
 
-$button-border-radius : 5px;
+$surface-light: #FCFDF6;
+$surface-container-light: #F0F1EB;
+$surface-container-high-light: #EAEBE5;
+$surface-container-highest-light: #E4E5DF;
+
+$on-surface-light: #1A1C18;
+$on-surface-variant-light: #73796E;
+$outline-light: #C3C8BB;
+$outline-variant-light: #C3C8BB;
+
+$negative: #BA1A1A;
+$positive: #4CAF50;
+$info: #2196F3;
+$warning: #FF9800;
+
+// ============================================
+// MD3 Color Tokens - Dark Theme
+// ============================================
+
+$primary-dark-theme: #B0CCAB;
+$on-primary-dark-theme: #1D361A;
+$primary-container-dark: #334D2E;
+$on-primary-container-dark: #CBE8C0;
+
+$surface-dark: #1A1C18;
+$surface-container-dark: #1E201B;
+$surface-container-high-dark: #282B25;
+$surface-container-highest-dark: #333530;
+
+$on-surface-dark: #E2E3DC;
+$on-surface-variant-dark: #8D9286;
+$outline-dark: #5C6158;
+$outline-variant-dark: #5C6158;
+
+// Quasar dark mode variables
+$dark: $surface-dark;
+$dark-page: $surface-dark;
+
+// ============================================
+// MD3 Shape System
+// ============================================
+
+$shape-corner-small: 8px;
+$shape-corner-medium: 12px;
+$shape-corner-large: 16px;
+$shape-corner-full: 100px;
+
+// Quasar overrides
+$button-border-radius: $shape-corner-full;
+$generic-border-radius: $shape-corner-medium;
+$card-border-radius: $shape-corner-medium;
+$input-border-radius: $shape-corner-small;
+
+// ============================================
+// MD3 Elevation
+// ============================================
+
+$elevation-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px 1px rgba(0, 0, 0, 0.15);
+$elevation-2: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 6px 2px rgba(0, 0, 0, 0.15);
+$elevation-3: 0 4px 8px 3px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.3);
+
+// ============================================
+// MD3 Typography
+// ============================================
+
+$typography-title-large: 22px;
+$typography-title-medium: 16px;
+$typography-title-small: 14px;
+$typography-body-large: 16px;
+$typography-body-medium: 14px;
+$typography-body-small: 12px;
+$typography-label-large: 14px;
+$typography-label-medium: 12px;
+$typography-label-small: 11px;
