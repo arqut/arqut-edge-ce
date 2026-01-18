@@ -27,6 +27,12 @@ build-ui:
 	cd ui && npm run build
 	@echo "✓ UI built: ui/dist/spa/"
 
+build-ui-ha:
+	@echo "Building UI..."
+	cd ui && npm run build:docker
+	@echo "✓ UI built: ui/dist/spa/"
+
+
 # Build Go binary with embedded UI
 build-go:
 	@echo "Building Go binary..."

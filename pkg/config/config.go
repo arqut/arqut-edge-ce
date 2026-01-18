@@ -25,7 +25,8 @@ type Config struct {
 	ServerAddr string `yaml:"server_addr"`
 	LogLevel   string `yaml:"log_level"`
 
-	Version string `yaml:"-"`
+	Version   string `yaml:"-"`
+	IsHAAddon bool   `yaml:"-"` // Flag indicating if running as Home Assistant Add-on
 
 	mu   sync.Mutex `yaml:"-"`
 	file string     `yaml:"-"`
@@ -120,12 +121,13 @@ func ConfigInstance() *Config {
 }
 
 // Load loads configuration from the specified file and environment variables
-func Load(version, file, logLevel string) (*Config, error) {
+func Load(isHAAddon bool, version, file, logLevel string) (*Config, error) {
 	_ = godotenv.Load(".env")
 
 	cfg = &Config{
-		Version: version,
-		file:    file,
+		Version:   version,
+		IsHAAddon: isHAAddon,
+		file:      file,
 	}
 
 	yamlFeeder := feeder.Yaml{Path: file}

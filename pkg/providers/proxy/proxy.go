@@ -625,6 +625,28 @@ func (p *ProxyProvider) Clear() error {
 	return p.repo.Clear()
 }
 
+// CreateHAAddonService creates a proxy service for Home Assistant when running as HA Add-on
+func (p *ProxyProvider) CreateHAAddonService() (*models.ProxyService, error) {
+	if !p.cfg.IsHAAddon {
+		return nil, fmt.Errorf("not running in HA Addon mode")
+	}
+
+	// Check if service already exists
+	_, err := p.repo.GetServiceByHostPort("homeassistant.local", 8123)
+	if err == nil {
+		return nil, fmt.Errorf("the service is already set up and running")
+	}
+
+	p.logger.Info("Trying to expose HA Addon as a service")
+
+	service, err := p.AddService("Home Assistant Dashboard", "homeassistant.local", 8123, "http")
+	if err != nil {
+		return nil, fmt.Errorf("could not create the service to expose the Home Assistant Add-on: %w", err)
+	}
+
+	return service, nil
+}
+
 // startService starts a proxy service on all interfaces
 func (p *ProxyProvider) startService(ctx context.Context, service *models.ProxyService) error {
 	p.mu.RLock()
@@ -668,7 +690,13 @@ func (p *ProxyProvider) startReverseProxyService(ctx context.Context, service *m
 
 	originalDirector := proxy.Director
 	proxy.Director = func(req *http.Request) {
+		// Log incoming request
+		p.logger.Printf("[Proxy] %s -> %s %s%s", service.Name, req.Method, req.Host, req.URL.RequestURI())
+
 		originalDirector(req)
+
+		// Set the Host header to the target host (required for HA and other apps that check Host)
+		req.Host = target.Host
 
 		// Add forwarded headers
 		if req.Header.Get("X-Forwarded-Proto") == "" {

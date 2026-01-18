@@ -10,6 +10,7 @@ import (
 
 	"github.com/arqut/arqut-edge-ce/api"
 	"github.com/arqut/arqut-edge-ce/pkg/config"
+	"github.com/arqut/arqut-edge-ce/pkg/haaddon"
 	"github.com/arqut/arqut-edge-ce/pkg/logger"
 	"github.com/arqut/arqut-edge-ce/pkg/providers"
 	"github.com/arqut/arqut-edge-ce/pkg/providers/proxy"
@@ -24,13 +25,15 @@ func main() {
 	// Create structured logger
 	appLogger := logger.NewDefault("ARQUT")
 
+	var isHAAddon bool
 	var cfgFile, logLevel string
 	flag.StringVar(&cfgFile, "config", "./arqut.yaml", "Path to configuration file")
+	flag.BoolVar(&isHAAddon, "haaddon", false, "Run in Home Assistant Add-on mode")
 	flag.StringVar(&logLevel, "loglevel", "", "Set the log level")
 	flag.Parse()
 
 	// Load configuration
-	cfg, err := config.Load(version, cfgFile, logLevel)
+	cfg, err := config.Load(isHAAddon, version, cfgFile, logLevel)
 	if err != nil {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
@@ -77,6 +80,22 @@ func main() {
 	ctx := context.Background()
 	if err := registry.InitializeAll(ctx); err != nil {
 		log.Fatalf("Failed to initialize services: %v", err)
+	}
+
+	// Create HA Addon service if running in HA Addon mode
+	if cfg.IsHAAddon {
+		appLogger.Info("Running in Home Assistant Add-on mode")
+		if svc, err := registry.Get("proxy"); err == nil {
+			if proxyImpl, ok := svc.(*proxy.ProxyProvider); ok {
+				if _, err := proxyImpl.CreateHAAddonService(); err != nil {
+					appLogger.Warn("HA Addon service setup failed with error: %v", err)
+				} else {
+					appLogger.Info("Home Assistant Dashboard service created")
+					// Update HA config with trusted proxy subnets
+					haaddon.UpdateHAConfig()
+				}
+			}
+		}
 	}
 
 	// Wire up signaling channel with proxy provider and connect if signaling client exists

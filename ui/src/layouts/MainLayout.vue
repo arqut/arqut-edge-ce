@@ -69,6 +69,22 @@
             </q-item-section>
           </q-item>
 
+          <!-- Settings - only shown in docker/HA addon mode -->
+          <q-item
+            v-if="isDocker"
+            clickable
+            v-ripple
+            to="/settings"
+            class="nav-item"
+          >
+            <q-item-section avatar>
+              <q-icon name="settings" />
+            </q-item-section>
+            <q-item-section>
+              <q-item-label class="text-label-large">Settings</q-item-label>
+            </q-item-section>
+          </q-item>
+
           <!-- Extension point for EN navigation items -->
           <slot name="nav-items" />
         </q-list>
@@ -115,6 +131,9 @@ import { useDrawerStore } from '../stores/drawer';
 const $q = useQuasar();
 const leftDrawerOpen = ref(false);
 const drawerStore = useDrawerStore();
+
+// Check if running in docker/HA addon mode
+const isDocker = process.env.TARGET === 'docker';
 
 // Use different logo for dark/light theme
 const logoSrc = computed(() => $q.dark.isActive ? '/ArqLogoDark.png' : '/ArqLogo.png');

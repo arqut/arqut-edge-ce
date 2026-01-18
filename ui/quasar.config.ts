@@ -22,6 +22,10 @@ export default configure(() => {
         vueShim: true,
       },
 
+      env: {
+        TARGET: process.env.TARGET,
+      },
+
       vueRouterMode: 'hash',
 
       vitePlugins: [

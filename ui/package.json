@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "quasar dev",
     "build": "quasar build",
+    "build:docker": "TARGET=docker quasar build",
     "lint": "eslint --ext .js,.ts,.vue ./src",
     "format": "prettier --write \"**/*.{js,ts,vue,scss,html,md,json}\" --ignore-path .gitignore"
   },

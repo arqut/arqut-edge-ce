@@ -12,7 +12,9 @@ import (
 
 	"github.com/arqut/arqut-edge-ce/pkg/api"
 	"github.com/arqut/arqut-edge-ce/pkg/core"
+	"github.com/arqut/arqut-edge-ce/pkg/haaddon"
 	"github.com/arqut/arqut-edge-ce/pkg/providers"
+	"github.com/arqut/arqut-edge-ce/pkg/providers/proxy"
 	"github.com/arqut/arqut-edge-ce/ui"
 )
 
@@ -57,6 +59,10 @@ func (s *ApiServer) setupRoutes() {
 	s.api.Get("/check-access", s.authMiddleware, s.handleCheckAccess)
 	s.api.Post("/send-data", s.authMiddleware, s.handleSendData)
 	s.api.Post("/metrics", s.authMiddleware, s.handleGetMetrics)
+
+	// Integration routes (for HA addon)
+	s.api.Get("/integrations/network", s.handleGetNetworkSettings)
+	s.api.Post("/config/haaddon/expose", s.handleExposeHAAddon)
 
 	s.app.Get("/health", s.handleHealth)
 }
@@ -186,6 +192,47 @@ func (s *ApiServer) handleHealth(c *fiber.Ctx) error {
 	return api.SuccessResp(c, fiber.Map{
 		"status": "healthy",
 	})
+}
+
+// handleGetNetworkSettings returns network subnets for HA addon configuration
+func (s *ApiServer) handleGetNetworkSettings(c *fiber.Ctx) error {
+	subnets, err := haaddon.GetNetworkSubnets()
+	if err != nil {
+		return api.ErrorInternalServerErrorResp(c, "Failed to get network settings")
+	}
+
+	return api.SuccessResp(c, fiber.Map{
+		"subnets": subnets,
+	})
+}
+
+// handleExposeHAAddon exposes Home Assistant as a proxy service
+func (s *ApiServer) handleExposeHAAddon(c *fiber.Ctx) error {
+	// Get the proxy provider
+	svc, err := s.providers.Get("proxy")
+	if err != nil {
+		return api.ErrorInternalServerErrorResp(c, "Proxy service not available")
+	}
+
+	proxyImpl, ok := svc.(*proxy.ProxyProvider)
+	if !ok {
+		return api.ErrorInternalServerErrorResp(c, "Invalid proxy service")
+	}
+
+	// Create the HA Addon service
+	service, err := proxyImpl.CreateHAAddonService()
+	if err != nil {
+		// Check if service already exists
+		if strings.Contains(err.Error(), "already set up") {
+			return api.ErrorCodeResp(c, fiber.StatusConflict, "Home Assistant service is already configured")
+		}
+		return api.ErrorInternalServerErrorResp(c, err.Error())
+	}
+
+	// Update HA config with trusted proxy subnets
+	haaddon.UpdateHAConfig()
+
+	return api.SuccessResp(c, service)
 }
 
 // extractToken extracts the bearer token from the Authorization header
