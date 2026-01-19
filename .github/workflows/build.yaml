@@ -95,20 +95,19 @@ jobs:
           overwrite: true
           retention-days: 7
 
-      - name: Trigger HA Add-on Build Workflow
-        run: |
-          echo "Artifact ID: ${{ steps.upload.outputs.artifact-id }}"
-          echo "Artifact URL: ${{ steps.upload.outputs.artifact-url }}"
-          echo "Artifact Digest: ${{ steps.upload.outputs.artifact-digest }}"
-
-          curl -X POST \
-            -H "Authorization: Bearer ${{ secrets.REPO_TOKEN }}" \
-            -H "Accept: application/vnd.github+json" \
-            https://api.github.com/repos/arqut/arqut-ha-addon/actions/workflows/build-arqut-edge-ce-addon.yaml/dispatches \
-            -d '{
-              "ref": "main",
-              "inputs": {
-                "version": "${{ steps.set_tag.outputs.tag_name }}",
-                "artifact_url": "${{ steps.upload.outputs.artifact-url }}"
-              }
-            }'
+      # - name: Trigger HA Add-on Build Workflow
+      #   run: |
+      #     echo "Artifact ID: ${{ steps.upload.outputs.artifact-id }}"
+      #     echo "Artifact URL: ${{ steps.upload.outputs.artifact-url }}"
+      #     echo "Artifact Digest: ${{ steps.upload.outputs.artifact-digest }}"
+      #     curl -X POST \
+      #       -H "Authorization: Bearer ${{ secrets.REPO_TOKEN }}" \
+      #       -H "Accept: application/vnd.github+json" \
+      #       https://api.github.com/repos/arqut/arqut-ha-addon/actions/workflows/build-arqut-edge-ce-addon.yaml/dispatches \
+      #       -d '{
+      #         "ref": "main",
+      #         "inputs": {
+      #           "version": "${{ steps.set_tag.outputs.tag_name }}",
+      #           "artifact_url": "${{ steps.upload.outputs.artifact-url }}"
+      #         }
+      #       }'
