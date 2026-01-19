@@ -21,6 +21,7 @@ tmp/
 .env
 .env.local
 .env.*.local
+arqut.*
 
 # Database files
 *.db
