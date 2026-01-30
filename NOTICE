@@ -1,0 +1,23 @@
+Arqut Edge Community Edition
+Copyright 2024-2026 Arqut
+
+This product includes software developed by the Arqut project
+(https://github.com/arqut).
+
+This software contains components from the following third-party projects:
+
+- GoFiber (https://github.com/gofiber/fiber) - MIT License
+- GORM (https://github.com/go-gorm/gorm) - MIT License
+- glebarez/sqlite (https://github.com/glebarez/sqlite) - MIT License
+- Pion WebRTC (https://github.com/pion/webrtc) - MIT License
+- WireGuard Go (https://golang.zx2c4.com/wireguard) - MIT License
+- Gorilla WebSocket (https://github.com/gorilla/websocket) - BSD-2-Clause License
+- golobby/config (https://github.com/golobby/config) - MIT License
+- godotenv (https://github.com/joho/godotenv) - MIT License
+- golang.org/x packages - BSD-3-Clause License
+- modernc.org/sqlite (https://gitlab.com/cznic/sqlite) - BSD-3-Clause License
+- YAML for Go (https://github.com/go-yaml/yaml) - MIT/Apache-2.0 License
+- FastHTTP (https://github.com/valyala/fasthttp) - MIT License
+- Google UUID (https://github.com/google/uuid) - BSD-3-Clause License
+
+For detailed license information, see the THIRD_PARTY_LICENSES file.
