@@ -69,7 +69,7 @@ type IntegrationProvider interface {
 // ProxyProvider defines proxy service management operations
 type ProxyProvider interface {
 	// Service Management
-	AddService(name, localHost string, localPort int, protocol string) (*models.ProxyService, error)
+	AddService(name, localHost string, localPort int, protocol string, path *string) (*models.ProxyService, error)
 	ModifyService(id string, config models.ProxyServiceConfig, operations ...string) error
 	DeleteService(id string) error
 	// GetServices() ([]*storage.ProxyService, error)

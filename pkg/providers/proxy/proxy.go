@@ -523,7 +523,7 @@ func (p *ProxyProvider) ExposeUIAsService() error {
 		return fmt.Errorf("failed to allocate tunnel port for default service: %w", err)
 	}
 
-	_, err = p.repo.AddService("Edge UI", host, port, tunnelPort, "http")
+	_, err = p.repo.AddService("Edge UI", host, port, tunnelPort, "http", nil)
 	if err != nil {
 		return fmt.Errorf("failed to create default proxy service: %w", err)
 	}
@@ -531,14 +531,14 @@ func (p *ProxyProvider) ExposeUIAsService() error {
 }
 
 // AddService creates a new proxy service
-func (p *ProxyProvider) AddService(name, localHost string, localPort int, protocol string) (*models.ProxyService, error) {
+func (p *ProxyProvider) AddService(name, localHost string, localPort int, protocol string, path *string) (*models.ProxyService, error) {
 	// Allocate tunnel port
 	tunnelPort, err := p.allocatePort()
 	if err != nil {
 		return nil, fmt.Errorf("failed to allocate port: %w", err)
 	}
 
-	service, err := p.repo.AddService(name, localHost, localPort, tunnelPort, protocol)
+	service, err := p.repo.AddService(name, localHost, localPort, tunnelPort, protocol, path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to add service: %w", err)
 	}
@@ -639,7 +639,7 @@ func (p *ProxyProvider) CreateHAAddonService() (*models.ProxyService, error) {
 
 	p.logger.Info("Trying to expose HA Addon as a service")
 
-	service, err := p.AddService("Home Assistant Dashboard", "homeassistant.local", 8123, "http")
+	service, err := p.AddService("Home Assistant Dashboard", "homeassistant.local", 8123, "http", nil)
 	if err != nil {
 		return nil, fmt.Errorf("could not create the service to expose the Home Assistant Add-on: %w", err)
 	}
@@ -697,6 +697,11 @@ func (p *ProxyProvider) startReverseProxyService(ctx context.Context, service *m
 
 		// Set the Host header to the target host (required for HA and other apps that check Host)
 		req.Host = target.Host
+
+		// Prepend service path if configured
+		if service.Path != nil && *service.Path != "" {
+			req.URL.Path = *service.Path + req.URL.Path
+		}
 
 		// Add forwarded headers
 		if req.Header.Get("X-Forwarded-Proto") == "" {

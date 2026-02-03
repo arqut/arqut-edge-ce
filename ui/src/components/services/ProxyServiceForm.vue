@@ -85,6 +85,19 @@
             </template>
           </q-input>
 
+          <!-- Path Input -->
+          <q-input
+            v-model="formData.path"
+            label="Path (Optional)"
+            outlined
+            :disable="isRunning"
+            hint="URL path prefix (e.g., /api)"
+          >
+            <template v-slot:prepend>
+              <q-icon name="route" />
+            </template>
+          </q-input>
+
           <!-- Service URL Preview -->
           <div v-if="serviceUrl" class="url-preview q-pa-md">
             <div class="text-label-medium text-on-surface-variant q-mb-xs">
@@ -179,7 +192,8 @@ const serviceUrl = computed(() => {
   if (!formData.value.protocol || !formData.value.local_host || !formData.value.local_port) {
     return '';
   }
-  return `${formData.value.protocol}://${formData.value.local_host}:${formData.value.local_port}`;
+  const path = formData.value.path || '';
+  return `${formData.value.protocol}://${formData.value.local_host}:${formData.value.local_port}${path}`;
 });
 
 function onCancel() {

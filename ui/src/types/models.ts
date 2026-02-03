@@ -5,6 +5,7 @@ export interface ProxyService {
   name: string;
   local_host: string;
   local_port: number;
+  path?: string;
   protocol: 'http' | 'ws';
   enabled: boolean;
   created_at?: string;

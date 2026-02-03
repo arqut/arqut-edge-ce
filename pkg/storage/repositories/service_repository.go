@@ -18,7 +18,7 @@ func NewServiceRepository(db *gorm.DB) *ServiceRepository {
 }
 
 // AddService creates a new proxy service
-func (r *ServiceRepository) AddService(name, localHost string, localPort int, tunnelPort int, protocol string) (*models.ProxyService, error) {
+func (r *ServiceRepository) AddService(name, localHost string, localPort int, tunnelPort int, protocol string, path *string) (*models.ProxyService, error) {
 	// Validate protocol
 	if protocol != "http" && protocol != "websocket" {
 		return nil, fmt.Errorf("unsupported protocol: %s (supported: http, websocket)", protocol)
@@ -42,6 +42,7 @@ func (r *ServiceRepository) AddService(name, localHost string, localPort int, tu
 		TunnelPort: tunnelPort,
 		LocalHost:  localHost,
 		LocalPort:  localPort,
+		Path:       path,
 		Protocol:   protocol,
 		Enabled:    true,
 	}
@@ -74,6 +75,9 @@ func (r *ServiceRepository) UpdateService(id string, config models.ProxyServiceC
 			return fmt.Errorf("invalid local port: %d", *config.LocalPort)
 		}
 		updates["local_port"] = *config.LocalPort
+	}
+	if config.Path != nil {
+		updates["path"] = *config.Path
 	}
 	if config.Enabled != nil {
 		updates["enabled"] = *config.Enabled

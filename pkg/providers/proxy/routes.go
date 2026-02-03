@@ -14,6 +14,7 @@ type ProxyServiceRequest struct {
 	Protocol  string `json:"protocol"`
 	LocalHost string `json:"local_host"`
 	LocalPort int    `json:"local_port"`
+	Path      string `json:"path,omitempty"`
 }
 
 // ProxyServiceUpdateRequest represents the request body for updating a service
@@ -21,19 +22,21 @@ type ProxyServiceUpdateRequest struct {
 	Name      *string `json:"name"`
 	LocalHost *string `json:"local_host"`
 	LocalPort *int    `json:"local_port"`
+	Path      *string `json:"path"`
 	Enabled   *bool   `json:"enabled"`
 }
 
 // ProxyServiceResponse represents the response for a proxy service
 type ProxyServiceResponse struct {
-	ID         string `json:"id"`
-	Name       string `json:"name"`
-	TunnelPort int    `json:"tunnel_port"`
-	LocalHost  string `json:"local_host"`
-	LocalPort  int    `json:"local_port"`
-	Protocol   string `json:"protocol"`
-	Enabled    bool   `json:"enabled"`
-	CreatedAt  string `json:"created_at"`
+	ID         string  `json:"id"`
+	Name       string  `json:"name"`
+	TunnelPort int     `json:"tunnel_port"`
+	LocalHost  string  `json:"local_host"`
+	LocalPort  int     `json:"local_port"`
+	Path       *string `json:"path,omitempty"`
+	Protocol   string  `json:"protocol"`
+	Enabled    bool    `json:"enabled"`
+	CreatedAt  string  `json:"created_at"`
 }
 
 // RegisterRoutes registers all proxy-related API routes
@@ -64,6 +67,7 @@ func (p *ProxyProvider) handleGetServices(c *fiber.Ctx) error {
 			TunnelPort: service.TunnelPort,
 			LocalHost:  service.LocalHost,
 			LocalPort:  service.LocalPort,
+			Path:       service.Path,
 			Protocol:   service.Protocol,
 			Enabled:    service.Enabled,
 			CreatedAt:  service.CreatedAt.Format("2006-01-02 15:04:05"),
@@ -89,7 +93,13 @@ func (p *ProxyProvider) handleCreateService(c *fiber.Ctx) error {
 		return api.ErrorBadRequestResp(c, "Missing required fields (name, local_host)")
 	}
 
-	service, err := p.AddService(req.Name, req.LocalHost, req.LocalPort, req.Protocol)
+	// Convert path string to pointer (nil if empty)
+	var path *string
+	if req.Path != "" {
+		path = &req.Path
+	}
+
+	service, err := p.AddService(req.Name, req.LocalHost, req.LocalPort, req.Protocol, path)
 	if err != nil {
 		p.logger.Printf("Error creating service: %v", err)
 		return api.ErrorInternalServerErrorResp(c, "Failed to create service")
@@ -122,6 +132,7 @@ func (p *ProxyProvider) handleUpdateService(c *fiber.Ctx) error {
 		Name:      req.Name,
 		LocalHost: req.LocalHost,
 		LocalPort: req.LocalPort,
+		Path:      req.Path,
 		Enabled:   req.Enabled,
 	}
 
