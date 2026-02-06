@@ -60,6 +60,7 @@ type ProxyProvider struct {
 	syncChan        chan<- *signaling.OutboundMessage
 	syncCallbacks   map[string]SyncCallback // Track pending syncs by message ID
 	callbackMu      sync.Mutex
+	httpMiddleware  func(http.Handler) http.Handler // Optional middleware for tunnel proxy servers
 }
 
 // NewProxyProvider creates a new proxy provider
@@ -126,6 +127,14 @@ func (p *ProxyProvider) SetSyncChannel(ch chan<- *signaling.OutboundMessage) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.syncChan = ch
+}
+
+// SetHTTPMiddleware sets an optional middleware that wraps the reverse proxy handler.
+// Used by enterprise edition to inject authentication on tunnel ports.
+func (p *ProxyProvider) SetHTTPMiddleware(mw func(http.Handler) http.Handler) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.httpMiddleware = mw
 }
 
 // syncAllServices sends all services to the cloud via signaling channel
@@ -719,9 +728,19 @@ func (p *ProxyProvider) startReverseProxyService(ctx context.Context, service *m
 		http.Error(w, "Bad Gateway", http.StatusBadGateway)
 	}
 
+	// Apply optional middleware (e.g., session auth in enterprise edition)
+	p.mu.RLock()
+	mw := p.httpMiddleware
+	p.mu.RUnlock()
+
+	var handler http.Handler = proxy
+	if mw != nil {
+		handler = mw(handler)
+	}
+
 	server := &http.Server{
 		Addr:         addr,
-		Handler:      proxy,
+		Handler:      handler,
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 30 * time.Second,
 		IdleTimeout:  120 * time.Second,
