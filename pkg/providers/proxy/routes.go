@@ -183,7 +183,7 @@ func (p *ProxyProvider) handleDeleteService(c *fiber.Ctx) error {
 
 	if err := p.DeleteService(serviceID); err != nil {
 		p.logger.Printf("Error deleting service: %v", err)
-		return api.ErrorInternalServerErrorResp(c, "Failed to delete service")
+		return api.ErrorInternalServerErrorResp(c, err.Error())
 	}
 
 	return api.SuccessResp(c, nil)

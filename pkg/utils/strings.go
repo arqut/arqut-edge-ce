@@ -42,18 +42,18 @@ func StringToInt(val string) int {
 }
 
 func ToString(data any) string {
-	switch data.(type) {
+	switch data := data.(type) {
 	case error:
-		return data.(error).Error()
+		return data.Error()
 	case int:
 		return fmt.Sprintf("%d", data)
 	case float32:
 	case float64:
 		return fmt.Sprintf("%f", data)
 	case []byte:
-		return string(data.([]byte))
+		return string(data)
 	case string:
-		return data.(string)
+		return data
 	default:
 	}
 	text, err := json.MarshalIndent(data, "", "    ")
@@ -65,4 +65,12 @@ func ToString(data any) string {
 
 func HashKey(key string) string {
 	return fmt.Sprintf("%x", md5.Sum([]byte(key)))
+}
+
+func TruncateString(s string, maxLen int) string {
+	runes := []rune(s)
+	if len(runes) > maxLen {
+		return string(runes[:maxLen])
+	}
+	return s
 }

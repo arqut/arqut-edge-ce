@@ -18,7 +18,7 @@ func NewServiceRepository(db *gorm.DB) *ServiceRepository {
 }
 
 // AddService creates a new proxy service
-func (r *ServiceRepository) AddService(name, localHost string, localPort int, tunnelPort int, protocol string, path *string) (*models.ProxyService, error) {
+func (r *ServiceRepository) AddService(name, localHost string, localPort int, tunnelPort int, protocol string, path *string, id *string) (*models.ProxyService, error) {
 	// Validate protocol
 	if protocol != "http" && protocol != "websocket" {
 		return nil, fmt.Errorf("unsupported protocol: %s (supported: http, websocket)", protocol)
@@ -35,7 +35,13 @@ func (r *ServiceRepository) AddService(name, localHost string, localPort int, tu
 		return nil, fmt.Errorf("service name cannot be empty")
 	}
 
-	serviceID, _ := utils.GenerateID()
+	var serviceID string
+	if id != nil {
+		serviceID = *id
+	} else {
+		serviceID, _ = utils.GenerateID()
+	}
+
 	service := &models.ProxyService{
 		ID:         serviceID,
 		Name:       name,

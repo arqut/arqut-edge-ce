@@ -98,7 +98,7 @@ func (p *ProxyProvider) Initialize(ctx context.Context, registry *providers.Regi
 	p.repo = registry.DB().ServiceRepo()
 	p.logger = registry.Logger()
 
-	// Expose UI as service if no services exist
+	// Expose UI as service if it is not already exposed
 	if err := p.ExposeUIAsService(); err != nil {
 		return fmt.Errorf("failed to expose UI as service: %w", err)
 	}
@@ -504,13 +504,13 @@ func (p *ProxyProvider) RemoveInterface(name string) {
 }
 
 func (p *ProxyProvider) ExposeUIAsService() error {
-	// Check if any services exist, if not create a default one
-	count, err := p.repo.Count()
-	if err != nil {
-		return fmt.Errorf("failed to count proxy services: %w", err)
+	// Check if default Edge UI service exists, if not create it
+	service, err := p.repo.GetService(p.cfg.EdgeID)
+	if err != nil && !strings.Contains(err.Error(), "record not found") {
+		return fmt.Errorf("failed to get default Edge UI service: %w", err)
 	}
 
-	if count > 0 {
+	if service != nil {
 		return nil
 	}
 	p.logger.Println("No proxy services found, creating default service")
@@ -532,7 +532,8 @@ func (p *ProxyProvider) ExposeUIAsService() error {
 		return fmt.Errorf("failed to allocate tunnel port for default service: %w", err)
 	}
 
-	_, err = p.repo.AddService("Edge UI", host, port, tunnelPort, "http", nil)
+	// Default service for Edge UI has the same ID as Edge ID
+	_, err = p.repo.AddService("Edge UI", host, port, tunnelPort, "http", nil, &p.cfg.EdgeID)
 	if err != nil {
 		return fmt.Errorf("failed to create default proxy service: %w", err)
 	}
@@ -547,7 +548,7 @@ func (p *ProxyProvider) AddService(name, localHost string, localPort int, protoc
 		return nil, fmt.Errorf("failed to allocate port: %w", err)
 	}
 
-	service, err := p.repo.AddService(name, localHost, localPort, tunnelPort, protocol, path)
+	service, err := p.repo.AddService(name, localHost, localPort, tunnelPort, protocol, path, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to add service: %w", err)
 	}
@@ -610,6 +611,10 @@ func (p *ProxyProvider) DisableService(id string) error {
 
 // DeleteService deletes a proxy service
 func (p *ProxyProvider) DeleteService(id string) error {
+	if id == p.cfg.EdgeID {
+		return fmt.Errorf("cannot delete the default Edge UI service")
+	}
+
 	// Get service before deleting for sync
 	service, err := p.repo.GetService(id)
 	if err != nil {
