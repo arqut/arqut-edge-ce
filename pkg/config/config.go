@@ -18,12 +18,15 @@ var cfg *Config
 
 // Config holds the application configuration
 type Config struct {
-	EdgeID     string `yaml:"edge_id"` // Unique edge identifier (auto-generated if not set)
-	APIKey     string `yaml:"api_key"` // API key for authentication
-	DBPath     string `yaml:"db_path"`
-	CloudURL   string `yaml:"cloud_url"` // Cloud server URL for edge registry, WebRTC signaling, and API key management
-	ServerAddr string `yaml:"server_addr"`
-	LogLevel   string `yaml:"log_level"`
+	EdgeID           string `yaml:"edge_id"` // Unique edge identifier (auto-generated if not set)
+	APIKey           string `yaml:"api_key"` // API key for authentication
+	DBPath           string `yaml:"db_path"`
+	CloudURL         string `yaml:"cloud_url"` // Cloud server URL for edge registry, WebRTC signaling, and API key management
+	ServerAddr       string `yaml:"server_addr"`
+	ServerSecureAddr string `yaml:"server_secure_addr"` // HTTPS server address (optional)
+	ServerSecureCert string `yaml:"server_secure_cert"` // Path to TLS certificate file (required if ServerSecureAddr is set)
+	ServerSecureKey  string `yaml:"server_secure_key"`  // Path to TLS key file (required if ServerSecureAddr is set)
+	LogLevel         string `yaml:"log_level"`
 
 	Version   string `yaml:"-"`
 	IsHAAddon bool   `yaml:"-"` // Flag indicating if running as Home Assistant Add-on
@@ -32,10 +35,22 @@ type Config struct {
 	file string     `yaml:"-"`
 }
 
+func (c *Config) GetServerAddr() string {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.ServerSecureAddr != "" {
+		return c.ServerSecureAddr
+	}
+	return c.ServerAddr
+}
+
 func (c *Config) GetServerPort() string {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
+	if c.ServerSecureAddr != "" {
+		return strings.Split(c.ServerSecureAddr, ":")[1]
+	}
 	return strings.Split(c.ServerAddr, ":")[1]
 }
 
@@ -68,6 +83,7 @@ func (c *Config) Save() error {
 
 // ensureDefaultConfig sets default values for missing config fields
 func (c *Config) EnsureDefaultConfig(save bool) error {
+	configDir := filepath.Dir(c.file)
 	changed := false
 	c.mu.Lock()
 
@@ -92,14 +108,26 @@ func (c *Config) EnsureDefaultConfig(save bool) error {
 	}
 
 	if c.DBPath == "" {
-		dir := filepath.Dir(c.file)
-		c.DBPath = dir + "/arqut.db"
+		c.DBPath = configDir + "/arqut.db"
 		changed = true
 	}
 
-	if c.ServerAddr == "" {
-		c.ServerAddr = ":3030"
-		changed = true
+	// ServerSecureAddr is optional, no default needed
+
+	if c.ServerSecureAddr != "" {
+		if c.ServerSecureCert == "" {
+			c.ServerSecureCert = configDir + "/cert.pem"
+			changed = true
+		}
+		if c.ServerSecureKey == "" {
+			c.ServerSecureKey = configDir + "/key.pem"
+			changed = true
+		}
+	} else {
+		if c.ServerAddr == "" {
+			c.ServerAddr = ":3030"
+			changed = true
+		}
 	}
 
 	if c.LogLevel == "" {

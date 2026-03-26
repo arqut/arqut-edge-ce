@@ -515,7 +515,7 @@ func (p *ProxyProvider) ExposeUIAsService() error {
 	}
 	p.logger.Println("No proxy services found, creating default service")
 
-	host, portStr, err := net.SplitHostPort(p.cfg.ServerAddr)
+	host, portStr, err := net.SplitHostPort(p.cfg.GetServerAddr())
 	if err != nil {
 		return fmt.Errorf("failed to parse server address: %w", err)
 	}

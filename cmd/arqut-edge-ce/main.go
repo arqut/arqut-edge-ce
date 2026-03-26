@@ -19,7 +19,7 @@ import (
 	"github.com/arqut/arqut-edge-ce/pkg/storage"
 )
 
-var version = "0.1.0"
+var version = "0.3.0"
 
 func main() {
 	// Create structured logger
@@ -121,7 +121,7 @@ func main() {
 
 		// Connect to signaling server
 		if cfg.APIKey != "" && cfg.CloudURL != "" {
-			sigClient.Connect(ctx, cfg.APIKey, cfg.EdgeID, cfg.ServerAddr)
+			sigClient.Connect(ctx, cfg.APIKey, cfg.EdgeID, cfg.GetServerAddr())
 			appLogger.Info("Connected to signaling server with edge ID: %s", cfg.EdgeID)
 		} else {
 			appLogger.Warn("-------------------------------------------------------------------------")
@@ -143,12 +143,29 @@ func main() {
 	// Register service-specific routes
 	registry.RegisterAllRoutes(srv.ApiRouter())
 
-	// Start server in a goroutine
-	go func() {
-		if err := srv.Start(cfg.ServerAddr); err != nil {
-			log.Fatalf("Server failed to start: %v", err)
+	if cfg.ServerAddr != "" || cfg.ServerSecureAddr != "" {
+		if cfg.ServerAddr != "" {
+			appLogger.Info("Starting server on %s", cfg.ServerAddr)
+			go func() {
+				if err := srv.Start(cfg.ServerAddr); err != nil {
+					log.Fatalf("Server failed to start: %v", err)
+				}
+			}()
 		}
-	}()
+
+		// Start secure server if configured
+		if cfg.ServerSecureAddr != "" {
+			appLogger.Info("Starting secure server on %s", cfg.ServerSecureAddr)
+			go func() {
+				// You may want to make cert and key paths configurable as well
+				if err := srv.StartSecure(cfg.ServerSecureAddr, cfg.ServerSecureCert, cfg.ServerSecureKey); err != nil {
+					log.Fatalf("Secure server failed to start: %v", err)
+				}
+			}()
+		}
+	} else {
+		appLogger.Warn("No server address configured, API server will not start")
+	}
 
 	// Wait for interrupt signal
 	quit := make(chan os.Signal, 1)

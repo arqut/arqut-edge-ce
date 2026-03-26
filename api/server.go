@@ -90,6 +90,12 @@ func (s *ApiServer) Start(addr string) error {
 	return s.app.Listen(addr)
 }
 
+// StartSecure starts the HTTPS server with TLS
+func (s *ApiServer) StartSecure(addr, certFile, keyFile string) error {
+	s.providers.Logger().Printf("Starting secure server on %s", addr)
+	return s.app.ListenTLS(addr, certFile, keyFile)
+}
+
 // Shutdown gracefully shuts down the server
 func (s *ApiServer) Shutdown(ctx context.Context) error {
 	s.providers.Logger().Println("Server shutdown requested")
