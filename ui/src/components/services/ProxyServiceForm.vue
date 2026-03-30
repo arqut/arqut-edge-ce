@@ -7,15 +7,12 @@
           <div class="text-title-large">
             {{ isEdit ? 'Edit Service' : 'Create Service' }}
           </div>
-          <q-btn
-            flat
-            round
-            icon="close"
-            size="sm"
-            @click="onCancel"
-          />
+          <q-btn flat round icon="close" size="sm" @click="onCancel" />
         </div>
-        <div v-if="isEdit" class="text-body-medium text-on-surface-variant q-mt-xs">
+        <div
+          v-if="isEdit"
+          class="text-body-medium text-on-surface-variant q-mt-xs"
+        >
           {{ formData.name }}
         </div>
       </q-card-section>
@@ -31,7 +28,7 @@
             label="Service Name"
             outlined
             :disable="isRunning"
-            :rules="[val => !!val || 'Name is required']"
+            :rules="[(val) => !!val || 'Name is required']"
             autofocus
           >
             <template v-slot:prepend>
@@ -60,7 +57,7 @@
             label="Local Host"
             outlined
             :disable="isRunning"
-            :rules="[val => !!val || 'Host is required']"
+            :rules="[(val) => !!val || 'Host is required']"
             hint="Use 'localhost' for local services"
           >
             <template v-slot:prepend>
@@ -76,8 +73,9 @@
             outlined
             :disable="isRunning"
             :rules="[
-              val => !!val || 'Port is required',
-              val => val > 0 && val < 65536 || 'Port must be between 1 and 65535'
+              (val) => !!val || 'Port is required',
+              (val) =>
+                (val > 0 && val < 65536) || 'Port must be between 1 and 65535',
             ]"
           >
             <template v-slot:prepend>
@@ -104,7 +102,9 @@
               Service URL
             </div>
             <div class="row items-center justify-between">
-              <code class="text-body-medium text-primary">{{ serviceUrl }}</code>
+              <code class="text-body-medium text-primary">{{
+                serviceUrl
+              }}</code>
               <q-btn
                 flat
                 round
@@ -130,7 +130,9 @@
             <q-icon name="warning" />
           </template>
           <div class="text-label-large">Service is running</div>
-          <div class="text-body-small">Stop the service before making changes</div>
+          <div class="text-body-small">
+            Stop the service before making changes
+          </div>
         </q-banner>
       </q-card-section>
 
@@ -183,13 +185,18 @@ const submitting = ref(false);
 
 const protocolOptions = [
   { label: 'HTTP', value: 'http' },
+  { label: 'HTTPS', value: 'https' },
   { label: 'WebSocket', value: 'ws' },
 ];
 
 const isEdit = computed(() => !!props.service.id);
 const isRunning = computed(() => formData.value.enabled);
 const serviceUrl = computed(() => {
-  if (!formData.value.protocol || !formData.value.local_host || !formData.value.local_port) {
+  if (
+    !formData.value.protocol ||
+    !formData.value.local_host ||
+    !formData.value.local_port
+  ) {
     return '';
   }
   const path = formData.value.path || '';
@@ -208,10 +215,12 @@ async function onSubmit() {
       : await proxyServices.createService(formData.value);
 
     if (res.error) {
-      ui.notifyError(res.message || 'Error saving service');
+      ui.notifyError(res.error.message || 'Error saving service');
     } else {
       ui.notifySuccess(
-        isEdit.value ? 'Service updated successfully' : 'Service created successfully'
+        isEdit.value
+          ? 'Service updated successfully'
+          : 'Service created successfully',
       );
       drawer.closeRight();
     }
@@ -236,7 +245,7 @@ function copyUrl() {
   min-width: 360px;
 
   .url-preview {
-    background-color: #EAEBE5;
+    background-color: #eaebe5;
     border-radius: 8px;
 
     code {
@@ -246,8 +255,8 @@ function copyUrl() {
   }
 
   .warning-banner {
-    background-color: #FFF3E0 !important;
-    color: #E65100 !important;
+    background-color: #fff3e0 !important;
+    color: #e65100 !important;
     border-radius: 12px;
   }
 
@@ -260,12 +269,12 @@ function copyUrl() {
 
 body.body--dark .service-form {
   .url-preview {
-    background-color: #282B25;
+    background-color: #282b25;
   }
 
   .warning-banner {
-    background-color: #3D2600 !important;
-    color: #FFB74D !important;
+    background-color: #3d2600 !important;
+    color: #ffb74d !important;
   }
 }
 </style>
