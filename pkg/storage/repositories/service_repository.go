@@ -20,8 +20,8 @@ func NewServiceRepository(db *gorm.DB) *ServiceRepository {
 // AddService creates a new proxy service
 func (r *ServiceRepository) AddService(name, localHost string, localPort int, tunnelPort int, protocol string, path *string, id *string) (*models.ProxyService, error) {
 	// Validate protocol
-	if protocol != "http" && protocol != "websocket" {
-		return nil, fmt.Errorf("unsupported protocol: %s (supported: http, websocket)", protocol)
+	if protocol != "http" && protocol != "https" && protocol != "ws" && protocol != "wss" {
+		return nil, fmt.Errorf("unsupported protocol: %s (supported: http, https, ws, wss)", protocol)
 	}
 
 	// Validate input
@@ -84,6 +84,12 @@ func (r *ServiceRepository) UpdateService(id string, config models.ProxyServiceC
 	}
 	if config.Path != nil {
 		updates["path"] = *config.Path
+	}
+	if config.Protocol != nil {
+		if *config.Protocol != "http" && *config.Protocol != "https" && *config.Protocol != "ws" && *config.Protocol != "wss" {
+			return fmt.Errorf("unsupported protocol: %s (supported: http, https, ws, wss)", *config.Protocol)
+		}
+		updates["protocol"] = *config.Protocol
 	}
 	if config.Enabled != nil {
 		updates["enabled"] = *config.Enabled

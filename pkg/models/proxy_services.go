@@ -27,5 +27,6 @@ type ProxyServiceConfig struct {
 	LocalHost *string `json:"local_host,omitempty"`
 	LocalPort *int    `json:"local_port,omitempty"`
 	Path      *string `json:"path,omitempty"`
+	Protocol  *string `json:"protocol,omitempty"`
 	Enabled   *bool   `json:"enabled,omitempty"`
 }

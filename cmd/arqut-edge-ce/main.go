@@ -19,7 +19,7 @@ import (
 	"github.com/arqut/arqut-edge-ce/pkg/storage"
 )
 
-var version = "0.1.0"
+var version = "0.3.0"
 
 func main() {
 	// Create structured logger

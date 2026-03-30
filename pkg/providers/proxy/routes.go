@@ -20,6 +20,7 @@ type ProxyServiceRequest struct {
 // ProxyServiceUpdateRequest represents the request body for updating a service
 type ProxyServiceUpdateRequest struct {
 	Name      *string `json:"name"`
+	Protocol  *string `json:"protocol"`
 	LocalHost *string `json:"local_host"`
 	LocalPort *int    `json:"local_port"`
 	Path      *string `json:"path"`
@@ -133,6 +134,7 @@ func (p *ProxyProvider) handleUpdateService(c *fiber.Ctx) error {
 		LocalHost: req.LocalHost,
 		LocalPort: req.LocalPort,
 		Path:      req.Path,
+		Protocol:  req.Protocol,
 		Enabled:   req.Enabled,
 	}
 

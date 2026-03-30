@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -691,8 +692,19 @@ func (p *ProxyProvider) startService(ctx context.Context, service *models.ProxyS
 // startReverseProxyService starts a reverse proxy on a specific address
 func (p *ProxyProvider) startReverseProxyService(ctx context.Context, service *models.ProxyService, addr string) error {
 	scheme := "http"
-	if strings.ToLower(service.Protocol) == "websocket" {
+	useTLS := false
+
+	switch strings.ToLower(service.Protocol) {
+	case "ws":
 		scheme = "http" // WebSocket upgrades start as HTTP
+	case "wss":
+		scheme = "https" // Secure WebSocket upgrades start as HTTPS
+		useTLS = true
+	case "https":
+		scheme = "https"
+		useTLS = true
+	case "http":
+		scheme = "http"
 	}
 
 	target, err := url.Parse(fmt.Sprintf("%s://%s:%d", scheme, service.LocalHost, service.LocalPort))
@@ -701,6 +713,20 @@ func (p *ProxyProvider) startReverseProxyService(ctx context.Context, service *m
 	}
 
 	proxy := httputil.NewSingleHostReverseProxy(target)
+
+	// Configure transport for HTTPS service
+	if useTLS {
+		// Create a custom transport that allows skipping TLS verification if needed
+		transport := &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+			MaxIdleConns:        100,
+			MaxIdleConnsPerHost: 10,
+			IdleConnTimeout:     90 * time.Second,
+		}
+		proxy.Transport = transport
+	}
 
 	originalDirector := proxy.Director
 	proxy.Director = func(req *http.Request) {
@@ -719,7 +745,7 @@ func (p *ProxyProvider) startReverseProxyService(ctx context.Context, service *m
 
 		// Add forwarded headers
 		if req.Header.Get("X-Forwarded-Proto") == "" {
-			req.Header.Set("X-Forwarded-Proto", "http")
+			req.Header.Set("X-Forwarded-Proto", scheme)
 		}
 		if req.Header.Get("X-Forwarded-For") == "" {
 			if clientIP, _, err := net.SplitHostPort(req.RemoteAddr); err == nil {
