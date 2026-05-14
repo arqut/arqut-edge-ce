@@ -112,9 +112,28 @@ func (m *Manager) handleTurnResponse(ctx context.Context, msg *SignallingMessage
 		return fmt.Errorf("failed to unmarshal TURN credentials: %w", err)
 	}
 
+	m.mutex.Lock()
 	m.turnCreds = &creds
+	m.mutex.Unlock()
 	m.logger.Println("[WireGuard/Manager] Received TURN credentials")
 	return nil
+}
+
+// GetTurnCredentials returns the most recent TURN credentials received from
+// the cloud, or nil if none have arrived yet. Returned value is a defensive
+// copy — callers can freely mutate it without affecting the manager state.
+// Safe for concurrent use.
+func (m *Manager) GetTurnCredentials() *TurnCredentials {
+	m.mutex.RLock()
+	defer m.mutex.RUnlock()
+	if m.turnCreds == nil {
+		return nil
+	}
+	cp := *m.turnCreds
+	if cp.URLs != nil {
+		cp.URLs = append([]string(nil), cp.URLs...)
+	}
+	return &cp
 }
 
 // updateTurnCreds periodically refreshes TURN credentials
