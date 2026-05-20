@@ -153,6 +153,14 @@ func (s *Service) RegisterAPIRoutes(router fiber.Router, middlewares ...fiber.Ha
 	s.registry.Logger().Printf("[WireGuard] API routes registered")
 }
 
+// RegisterConnectionEvents allows external services to register callbacks for peer connection events
+func (s *Service) RegisterConnectionEvents(onConnected func(*PeerConfig), onDisconnected func(*PeerConfig)) {
+	if s.manager != nil {
+		s.manager.onConnected = onConnected
+		s.manager.onDisconnected = onDisconnected
+	}
+}
+
 // GetManager returns the underlying WireGuard manager (for integration with other services)
 func (s *Service) GetManager() *Manager {
 	return s.manager

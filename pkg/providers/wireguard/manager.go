@@ -62,6 +62,9 @@ type Manager struct {
 	turnTicker *time.Ticker
 	turnCreds  *TurnCredentials
 
+	onConnected    func(*PeerConfig)
+	onDisconnected func(*PeerConfig)
+
 	logger *logger.Logger
 }
 
@@ -356,6 +359,10 @@ func (m *Manager) handleOffer(ctx context.Context, msg *SignallingMessage) error
 			m.notifyInterfaceAdded(name, clientPeer.EdgeIP)
 			m.logger.Printf("[WireGuard/Manager] TUN device %s is ready for peer %s", name, wgConn.targetID)
 		}
+		if m.onConnected != nil {
+			connectedPeer := *clientPeer
+			m.onConnected(&connectedPeer)
+		}
 	}
 	wgConn.setupWebRTCHandlersForAnswer(clientPeer, connectCallback)
 	m.wgConns[clientPeer.ID] = wgConn
@@ -497,11 +504,22 @@ func (m *Manager) closeConnectionFromPeer(targetID string) {
 			}
 		}
 
+		// Capture peer info before deletion for the OnDisconnected callback
+		var disconnectedPeer PeerConfig
+		if clientPeer, ok := m.clientPeers[targetID]; ok {
+			disconnectedPeer = *clientPeer
+		}
+
 		delete(m.wgConns, targetID)
 		delete(m.clientPeers, targetID)
 
 		if interfaceName != "" {
 			m.notifyInterfaceRemoved(interfaceName)
+		}
+
+		if m.onDisconnected != nil {
+			cb := m.onDisconnected
+			go cb(&disconnectedPeer)
 		}
 
 		m.logger.Printf("[WireGuard/Manager] peer %s disconected", targetID)
