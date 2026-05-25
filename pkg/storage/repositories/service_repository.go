@@ -2,11 +2,23 @@ package repositories
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/arqut/arqut-edge-ce/pkg/models"
 	"github.com/arqut/arqut-edge-ce/pkg/utils"
 	"gorm.io/gorm"
 )
+
+// ServiceFilter narrows the result set for ListServicesPaginated.
+// All fields are optional: zero values mean "don't filter on this column".
+type ServiceFilter struct {
+	// Name does a case-insensitive substring match on `name`.
+	Name string
+	// Protocol matches exactly; "" = any. Expect "http" or "websocket".
+	Protocol string
+	// Enabled is tri-state: nil = any; *true = enabled only; *false = disabled only.
+	Enabled *bool
+}
 
 type ServiceRepository struct {
 	db *gorm.DB
@@ -108,13 +120,50 @@ func (r *ServiceRepository) DeleteService(id string) error {
 	return nil
 }
 
-// GetServices returns all proxy services
+// GetServices returns all proxy services. Kept for internal callers (the
+// service-sync loop, used-port lookup) that need the full set; the HTTP
+// admin endpoint uses ListServicesPaginated instead.
 func (r *ServiceRepository) GetServices() ([]*models.ProxyService, error) {
 	var services []*models.ProxyService
 	if err := r.db.Order("name").Find(&services).Error; err != nil {
 		return nil, err
 	}
 	return services, nil
+}
+
+// ListServicesPaginated returns a page of services matching `f`, plus the
+// total row count for the same filter (so the API handler can populate the
+// pagination footer). `page` is 1-indexed; `pageSize` must be > 0 — the
+// HTTP handler clamps both before calling this.
+func (r *ServiceRepository) ListServicesPaginated(
+	page, pageSize int,
+	f ServiceFilter,
+) ([]*models.ProxyService, int64, error) {
+	q := r.db.Model(&models.ProxyService{})
+	if f.Name != "" {
+		q = q.Where("LOWER(name) LIKE ?", "%"+strings.ToLower(f.Name)+"%")
+	}
+	if f.Protocol != "" {
+		q = q.Where("protocol = ?", f.Protocol)
+	}
+	if f.Enabled != nil {
+		q = q.Where("enabled = ?", *f.Enabled)
+	}
+
+	var total int64
+	if err := q.Count(&total).Error; err != nil {
+		return nil, 0, fmt.Errorf("count services: %w", err)
+	}
+
+	var services []*models.ProxyService
+	err := q.Order("name").
+		Offset((page - 1) * pageSize).
+		Limit(pageSize).
+		Find(&services).Error
+	if err != nil {
+		return nil, 0, fmt.Errorf("find services: %w", err)
+	}
+	return services, total, nil
 }
 
 // GetService returns a single proxy service by ID
