@@ -175,7 +175,7 @@ func (p *WireGuardPeerToPeer) setupWireGuardConn(peerConfig *PeerConfig, callBac
 	publicKeyHex := hex.EncodeToString(publicKey[:])
 	allowedIP := fmt.Sprintf("%s/32", peerConfig.ClientIP)
 	wgConfig += fmt.Sprintf("public_key=%s\nallowed_ip=%s\nendpoint=webrtc://peer\npersistent_keepalive_interval=25\n", publicKeyHex, allowedIP)
-	log.Printf("WG Manager: IpcSet!\n%s", wgConfig)
+	log.Printf("WG Manager: IpcSet for peer %s", p.targetID)
 	if err := p.wgDevice.IpcSet(wgConfig); err != nil {
 		log.Printf("WG Manager: Failed to configure WireGuard peer %s: %v", p.targetID, err)
 		// Cleanup on configuration error

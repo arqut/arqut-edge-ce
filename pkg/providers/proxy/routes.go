@@ -1,10 +1,11 @@
 package proxy
 
 import (
-	"sort"
+	"math"
 
 	"github.com/arqut/arqut-edge-ce/pkg/api"
 	"github.com/arqut/arqut-edge-ce/pkg/models"
+	"github.com/arqut/arqut-edge-ce/pkg/storage/repositories"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -52,15 +53,47 @@ func (p *ProxyProvider) RegisterRoutes(router fiber.Router, middlewares ...fiber
 	proxyAPI.Delete("/:id", p.handleDeleteService)
 }
 
-// handleGetServices handles GET /api/services - returns all proxy services
+// handleGetServices handles GET /api/services — returns a page of proxy
+// services matching the query-string filter. Query params:
+//
+//	page      1-indexed page number (default 1)
+//	page_size items per page (default 25, clamped to [1, 200])
+//	q         case-insensitive substring on `name`
+//	protocol  exact match: "http" or "websocket"
+//	enabled   tri-state: "true" / "false" / omitted = any
+//
+// Response envelope: `{ success, data: [...], meta: { pagination: {...} } }`.
+// Repo ordering: alphabetical by name (so a stable cursor across pages).
 func (p *ProxyProvider) handleGetServices(c *fiber.Ctx) error {
-	services, err := p.repo.GetServices()
+	page := c.QueryInt("page", 1)
+	if page < 1 {
+		page = 1
+	}
+	pageSize := c.QueryInt("page_size", 25)
+	if pageSize < 1 || pageSize > 200 {
+		pageSize = 25
+	}
+
+	f := repositories.ServiceFilter{
+		Name:     c.Query("q"),
+		Protocol: c.Query("protocol"),
+	}
+	switch c.Query("enabled") {
+	case "true":
+		tru := true
+		f.Enabled = &tru
+	case "false":
+		fal := false
+		f.Enabled = &fal
+	}
+
+	services, total, err := p.repo.ListServicesPaginated(page, pageSize, f)
 	if err != nil {
-		p.logger.Printf("Error getting services: %v", err)
+		p.logger.Printf("Error listing services: %v", err)
 		return api.ErrorInternalServerErrorResp(c, "Failed to get services")
 	}
 
-	var serviceList []ProxyServiceResponse
+	serviceList := make([]ProxyServiceResponse, 0, len(services))
 	for _, service := range services {
 		serviceList = append(serviceList, ProxyServiceResponse{
 			ID:         service.ID,
@@ -75,12 +108,16 @@ func (p *ProxyProvider) handleGetServices(c *fiber.Ctx) error {
 		})
 	}
 
-	// Sort by creation date
-	sort.Slice(serviceList, func(i, j int) bool {
-		return serviceList[i].CreatedAt < serviceList[j].CreatedAt
-	})
-
-	return api.SuccessResp(c, serviceList)
+	totalPages := int(math.Ceil(float64(total) / float64(pageSize)))
+	meta := api.ApiResponseMeta{
+		Pagination: &api.Pagination{
+			Page:       page,
+			PerPage:    pageSize,
+			Total:      int(total),
+			TotalPages: totalPages,
+		},
+	}
+	return api.SuccessResp(c, serviceList, meta)
 }
 
 // handleCreateService handles POST /api/services - creates a new proxy service

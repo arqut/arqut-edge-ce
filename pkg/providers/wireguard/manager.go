@@ -62,6 +62,9 @@ type Manager struct {
 	turnTicker *time.Ticker
 	turnCreds  *TurnCredentials
 
+	onConnected    func(*PeerConfig)
+	onDisconnected func(*PeerConfig)
+
 	logger *logger.Logger
 }
 
@@ -112,9 +115,28 @@ func (m *Manager) handleTurnResponse(ctx context.Context, msg *SignallingMessage
 		return fmt.Errorf("failed to unmarshal TURN credentials: %w", err)
 	}
 
+	m.mutex.Lock()
 	m.turnCreds = &creds
+	m.mutex.Unlock()
 	m.logger.Println("[WireGuard/Manager] Received TURN credentials")
 	return nil
+}
+
+// GetTurnCredentials returns the most recent TURN credentials received from
+// the cloud, or nil if none have arrived yet. Returned value is a defensive
+// copy — callers can freely mutate it without affecting the manager state.
+// Safe for concurrent use.
+func (m *Manager) GetTurnCredentials() *TurnCredentials {
+	m.mutex.RLock()
+	defer m.mutex.RUnlock()
+	if m.turnCreds == nil {
+		return nil
+	}
+	cp := *m.turnCreds
+	if cp.URLs != nil {
+		cp.URLs = append([]string(nil), cp.URLs...)
+	}
+	return &cp
 }
 
 // updateTurnCreds periodically refreshes TURN credentials
@@ -337,6 +359,10 @@ func (m *Manager) handleOffer(ctx context.Context, msg *SignallingMessage) error
 			m.notifyInterfaceAdded(name, clientPeer.EdgeIP)
 			m.logger.Printf("[WireGuard/Manager] TUN device %s is ready for peer %s", name, wgConn.targetID)
 		}
+		if m.onConnected != nil {
+			connectedPeer := *clientPeer
+			m.onConnected(&connectedPeer)
+		}
 	}
 	wgConn.setupWebRTCHandlersForAnswer(clientPeer, connectCallback)
 	m.wgConns[clientPeer.ID] = wgConn
@@ -478,11 +504,22 @@ func (m *Manager) closeConnectionFromPeer(targetID string) {
 			}
 		}
 
+		// Capture peer info before deletion for the OnDisconnected callback
+		var disconnectedPeer PeerConfig
+		if clientPeer, ok := m.clientPeers[targetID]; ok {
+			disconnectedPeer = *clientPeer
+		}
+
 		delete(m.wgConns, targetID)
 		delete(m.clientPeers, targetID)
 
 		if interfaceName != "" {
 			m.notifyInterfaceRemoved(interfaceName)
+		}
+
+		if m.onDisconnected != nil {
+			cb := m.onDisconnected
+			go cb(&disconnectedPeer)
 		}
 
 		m.logger.Printf("[WireGuard/Manager] peer %s disconected", targetID)
