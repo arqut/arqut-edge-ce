@@ -1,19 +1,24 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.5.0] - 2026-07-03
+### Features
+- added option to require authentication for services
+- added retry logic for proxy service binding when TUN device is unavailable
+
 ## [0.4.0] - 2026-05-26
 ### Features
-- add service list pagination
-- add connect/disconnect events for wireguard service
-- add turn creds getter method
+- added service list pagination
+- added connect/disconnect events for wireguard service
+- added turn creds getter method
 
 ## [0.3.0] - 2026-03-30
 ### Features
-- support to serve local secure service HTTPs
+- supported to serve local secure service HTTPs
 
 ## [0.2.0] - 2026-02-04
 ### Features
-- add path to service
+- added path to service
 
 ## [0.1.0] - 2025-11-19
 ### Added

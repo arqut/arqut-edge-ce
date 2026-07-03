@@ -45,7 +45,7 @@ func newTestRepo(t *testing.T) *ServiceRepository {
 		{"Echo", "127.0.0.1", 8005, 9005, "http", true},
 	}
 	for _, s := range seed {
-		svc, err := r.AddService(s.name, s.localHost, s.localPort, s.tunnel, s.protocol, nil, nil)
+		svc, err := r.AddService(s.name, s.localHost, s.localPort, s.tunnel, s.protocol, false, nil, nil)
 		if err != nil {
 			t.Fatalf("seed %s: %v", s.name, err)
 		}
@@ -188,4 +188,3 @@ func TestListServicesPaginated_BeyondLastPage(t *testing.T) {
 		t.Errorf("len = %d, want 0 on out-of-range page", len(got))
 	}
 }
-

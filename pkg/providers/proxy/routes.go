@@ -11,34 +11,37 @@ import (
 
 // ProxyServiceRequest represents the request body for creating a service
 type ProxyServiceRequest struct {
-	Name      string `json:"name"`
-	Protocol  string `json:"protocol"`
-	LocalHost string `json:"local_host"`
-	LocalPort int    `json:"local_port"`
-	Path      string `json:"path,omitempty"`
+	Name         string `json:"name"`
+	Protocol     string `json:"protocol"`
+	LocalHost    string `json:"local_host"`
+	LocalPort    int    `json:"local_port"`
+	Path         string `json:"path,omitempty"`
+	RequiredAuth bool   `json:"required_auth"`
 }
 
 // ProxyServiceUpdateRequest represents the request body for updating a service
 type ProxyServiceUpdateRequest struct {
-	Name      *string `json:"name"`
-	Protocol  *string `json:"protocol"`
-	LocalHost *string `json:"local_host"`
-	LocalPort *int    `json:"local_port"`
-	Path      *string `json:"path"`
-	Enabled   *bool   `json:"enabled"`
+	Name         *string `json:"name"`
+	Protocol     *string `json:"protocol"`
+	LocalHost    *string `json:"local_host"`
+	LocalPort    *int    `json:"local_port"`
+	Path         *string `json:"path"`
+	RequiredAuth *bool   `json:"required_auth"`
+	Enabled      *bool   `json:"enabled"`
 }
 
 // ProxyServiceResponse represents the response for a proxy service
 type ProxyServiceResponse struct {
-	ID         string  `json:"id"`
-	Name       string  `json:"name"`
-	TunnelPort int     `json:"tunnel_port"`
-	LocalHost  string  `json:"local_host"`
-	LocalPort  int     `json:"local_port"`
-	Path       *string `json:"path,omitempty"`
-	Protocol   string  `json:"protocol"`
-	Enabled    bool    `json:"enabled"`
-	CreatedAt  string  `json:"created_at"`
+	ID           string  `json:"id"`
+	Name         string  `json:"name"`
+	TunnelPort   int     `json:"tunnel_port"`
+	LocalHost    string  `json:"local_host"`
+	LocalPort    int     `json:"local_port"`
+	Path         *string `json:"path,omitempty"`
+	Protocol     string  `json:"protocol"`
+	RequiredAuth bool    `json:"required_auth"`
+	Enabled      bool    `json:"enabled"`
+	CreatedAt    string  `json:"created_at"`
 }
 
 // RegisterRoutes registers all proxy-related API routes
@@ -96,15 +99,16 @@ func (p *ProxyProvider) handleGetServices(c *fiber.Ctx) error {
 	serviceList := make([]ProxyServiceResponse, 0, len(services))
 	for _, service := range services {
 		serviceList = append(serviceList, ProxyServiceResponse{
-			ID:         service.ID,
-			Name:       service.Name,
-			TunnelPort: service.TunnelPort,
-			LocalHost:  service.LocalHost,
-			LocalPort:  service.LocalPort,
-			Path:       service.Path,
-			Protocol:   service.Protocol,
-			Enabled:    service.Enabled,
-			CreatedAt:  service.CreatedAt.Format("2006-01-02 15:04:05"),
+			ID:           service.ID,
+			Name:         service.Name,
+			TunnelPort:   service.TunnelPort,
+			LocalHost:    service.LocalHost,
+			LocalPort:    service.LocalPort,
+			Path:         service.Path,
+			Protocol:     service.Protocol,
+			RequiredAuth: service.RequiredAuth,
+			Enabled:      service.Enabled,
+			CreatedAt:    service.CreatedAt.Format("2006-01-02 15:04:05"),
 		})
 	}
 
@@ -137,7 +141,7 @@ func (p *ProxyProvider) handleCreateService(c *fiber.Ctx) error {
 		path = &req.Path
 	}
 
-	service, err := p.AddService(req.Name, req.LocalHost, req.LocalPort, req.Protocol, path)
+	service, err := p.AddService(req.Name, req.LocalHost, req.LocalPort, req.Protocol, req.RequiredAuth, path)
 	if err != nil {
 		p.logger.Printf("Error creating service: %v", err)
 		return api.ErrorInternalServerErrorResp(c, "Failed to create service")
@@ -167,12 +171,13 @@ func (p *ProxyProvider) handleUpdateService(c *fiber.Ctx) error {
 	}
 
 	config := models.ProxyServiceConfig{
-		Name:      req.Name,
-		LocalHost: req.LocalHost,
-		LocalPort: req.LocalPort,
-		Path:      req.Path,
-		Protocol:  req.Protocol,
-		Enabled:   req.Enabled,
+		Name:         req.Name,
+		LocalHost:    req.LocalHost,
+		LocalPort:    req.LocalPort,
+		Path:         req.Path,
+		Protocol:     req.Protocol,
+		RequiredAuth: req.RequiredAuth,
+		Enabled:      req.Enabled,
 	}
 
 	if err := p.ModifyService(serviceID, config); err != nil {

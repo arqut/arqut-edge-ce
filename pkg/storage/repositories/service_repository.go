@@ -30,7 +30,7 @@ func NewServiceRepository(db *gorm.DB) *ServiceRepository {
 }
 
 // AddService creates a new proxy service
-func (r *ServiceRepository) AddService(name, localHost string, localPort int, tunnelPort int, protocol string, path *string, id *string) (*models.ProxyService, error) {
+func (r *ServiceRepository) AddService(name, localHost string, localPort int, tunnelPort int, protocol string, requiredAuth bool, path *string, id *string) (*models.ProxyService, error) {
 	// Validate protocol
 	if protocol != "http" && protocol != "https" && protocol != "ws" && protocol != "wss" {
 		return nil, fmt.Errorf("unsupported protocol: %s (supported: http, https, ws, wss)", protocol)
@@ -55,14 +55,15 @@ func (r *ServiceRepository) AddService(name, localHost string, localPort int, tu
 	}
 
 	service := &models.ProxyService{
-		ID:         serviceID,
-		Name:       name,
-		TunnelPort: tunnelPort,
-		LocalHost:  localHost,
-		LocalPort:  localPort,
-		Path:       path,
-		Protocol:   protocol,
-		Enabled:    true,
+		ID:           serviceID,
+		Name:         name,
+		TunnelPort:   tunnelPort,
+		LocalHost:    localHost,
+		LocalPort:    localPort,
+		Path:         path,
+		Protocol:     protocol,
+		RequiredAuth: requiredAuth,
+		Enabled:      true,
 	}
 
 	if err := r.db.Create(service).Error; err != nil {
@@ -105,6 +106,9 @@ func (r *ServiceRepository) UpdateService(id string, config models.ProxyServiceC
 	}
 	if config.Enabled != nil {
 		updates["enabled"] = *config.Enabled
+	}
+	if config.RequiredAuth != nil {
+		updates["required_auth"] = *config.RequiredAuth
 	}
 
 	if len(updates) == 0 {
@@ -185,6 +189,14 @@ func (r *ServiceRepository) GetService(id string) (*models.ProxyService, error) 
 func (r *ServiceRepository) GetServiceByHostPort(host string, port int) (*models.ProxyService, error) {
 	var service models.ProxyService
 	if err := r.db.Where("local_host = ? AND local_port = ?", host, port).First(&service).Error; err != nil {
+		return nil, err
+	}
+	return &service, nil
+}
+
+func (r *ServiceRepository) GetServiceByTunnelPort(tunnelPort int) (*models.ProxyService, error) {
+	var service models.ProxyService
+	if err := r.db.Where("tunnel_port = ?", tunnelPort).First(&service).Error; err != nil {
 		return nil, err
 	}
 	return &service, nil

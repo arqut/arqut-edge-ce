@@ -534,7 +534,7 @@ func (p *ProxyProvider) ExposeUIAsService() error {
 	}
 
 	// Default service for Edge UI has the same ID as Edge ID
-	_, err = p.repo.AddService("Edge UI", host, port, tunnelPort, "http", nil, &p.cfg.EdgeID)
+	_, err = p.repo.AddService("Edge UI", host, port, tunnelPort, "http", true, nil, &p.cfg.EdgeID)
 	if err != nil {
 		return fmt.Errorf("failed to create default proxy service: %w", err)
 	}
@@ -542,14 +542,14 @@ func (p *ProxyProvider) ExposeUIAsService() error {
 }
 
 // AddService creates a new proxy service
-func (p *ProxyProvider) AddService(name, localHost string, localPort int, protocol string, path *string) (*models.ProxyService, error) {
+func (p *ProxyProvider) AddService(name, localHost string, localPort int, protocol string, requiredAuth bool, path *string) (*models.ProxyService, error) {
 	// Allocate tunnel port
 	tunnelPort, err := p.allocatePort()
 	if err != nil {
 		return nil, fmt.Errorf("failed to allocate port: %w", err)
 	}
 
-	service, err := p.repo.AddService(name, localHost, localPort, tunnelPort, protocol, path, nil)
+	service, err := p.repo.AddService(name, localHost, localPort, tunnelPort, protocol, requiredAuth, path, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to add service: %w", err)
 	}
@@ -654,7 +654,7 @@ func (p *ProxyProvider) CreateHAAddonService() (*models.ProxyService, error) {
 
 	p.logger.Info("Trying to expose HA Addon as a service")
 
-	service, err := p.AddService("Home Assistant Dashboard", "homeassistant.local", 8123, "http", nil)
+	service, err := p.AddService("Home Assistant Dashboard", "homeassistant.local", 8123, "http", false, nil)
 	if err != nil {
 		return nil, fmt.Errorf("could not create the service to expose the Home Assistant Add-on: %w", err)
 	}
@@ -777,6 +777,33 @@ func (p *ProxyProvider) startReverseProxyService(ctx context.Context, service *m
 		IdleTimeout:  120 * time.Second,
 	}
 
+	// Bind ahead of time so we can retry: right after a TUN interface comes up,
+	// the OS may not have finished assigning its IP yet, causing the listen to fail.
+	const maxBindRetries = 3
+
+	var listener net.Listener
+	var listenErr error
+	for attempt := 1; attempt <= maxBindRetries; attempt++ {
+		listener, listenErr = net.Listen("tcp", addr)
+		if listenErr == nil {
+			break
+		}
+
+		if attempt <= maxBindRetries {
+			p.logger.Printf("Failed to bind %s proxy service %s on %s (attempt %d/%d): %v; retrying...",
+				strings.ToUpper(service.Protocol), service.Name, addr, attempt, maxBindRetries, listenErr)
+			bindRetryDelay := time.Duration(500*(attempt+1)) * time.Millisecond
+			select {
+			case <-time.After(bindRetryDelay):
+			case <-ctx.Done():
+				return fmt.Errorf("context cancelled while retrying bind for %s: %w", addr, ctx.Err())
+			}
+		}
+	}
+	if listenErr != nil {
+		return fmt.Errorf("failed to bind %s after %d attempts: %w", addr, maxBindRetries, listenErr)
+	}
+
 	key := fmt.Sprintf("%s-%s", service.ID, addr)
 	p.mu.Lock()
 	p.servers[key] = server
@@ -788,7 +815,7 @@ func (p *ProxyProvider) startReverseProxyService(ctx context.Context, service *m
 		defer p.wg.Done()
 		p.logger.Printf("Starting %s proxy service %s on %s -> %s:%d",
 			strings.ToUpper(service.Protocol), service.Name, addr, service.LocalHost, service.LocalPort)
-		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		if err := server.Serve(listener); err != nil && err != http.ErrServerClosed {
 			p.logger.Printf("Proxy server error for %s: %v", service.Name, err)
 		}
 	}()
