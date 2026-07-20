@@ -891,6 +891,20 @@ func (p *ProxyProvider) stopService(id string) {
 	}
 }
 
+// isServiceRunning reports whether a service currently has at least one
+// listener bound (i.e. it's enabled and the proxy provider has started it).
+func (p *ProxyProvider) isServiceRunning(id string) bool {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+
+	for key := range p.servers {
+		if strings.HasPrefix(key, id+"-") {
+			return true
+		}
+	}
+	return false
+}
+
 // startServicesOnInterface starts all services on a new interface
 func (p *ProxyProvider) startServicesOnInterface(ip string) {
 	p.mu.RLock()

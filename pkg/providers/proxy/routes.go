@@ -40,6 +40,7 @@ type ProxyServiceResponse struct {
 	Path         *string `json:"path,omitempty"`
 	Protocol     string  `json:"protocol"`
 	RequiredAuth bool    `json:"required_auth"`
+	IsEdge       bool    `json:"is_edge"`
 	Enabled      bool    `json:"enabled"`
 	CreatedAt    string  `json:"created_at"`
 }
@@ -107,6 +108,7 @@ func (p *ProxyProvider) handleGetServices(c *fiber.Ctx) error {
 			Path:         service.Path,
 			Protocol:     service.Protocol,
 			RequiredAuth: service.RequiredAuth,
+			IsEdge:       service.ID == p.cfg.EdgeID,
 			Enabled:      service.Enabled,
 			CreatedAt:    service.CreatedAt.Format("2006-01-02 15:04:05"),
 		})
@@ -150,7 +152,11 @@ func (p *ProxyProvider) handleCreateService(c *fiber.Ctx) error {
 	return api.SuccessResp(c, service)
 }
 
-// handleUpdateService handles PUT /api/services/:id - updates a proxy service
+// handleUpdateService handles PUT /api/services/:id - updates a proxy service.
+// If the service is currently running and the update changes its local host
+// or port, the running listener is stopped before the change is persisted and
+// started again afterwards (its target address is bound at start time, so an
+// in-place edit wouldn't otherwise take effect).
 func (p *ProxyProvider) handleUpdateService(c *fiber.Ctx) error {
 	serviceID := c.Params("id")
 	if serviceID == "" {
@@ -170,6 +176,15 @@ func (p *ProxyProvider) handleUpdateService(c *fiber.Ctx) error {
 		return api.ErrorBadRequestResp(c, "Local host cannot be empty")
 	}
 
+	existing, err := p.repo.GetService(serviceID)
+	if err != nil {
+		return api.ErrorNotFoundResp(c, "Service not found")
+	}
+
+	hostOrPortChanged := (req.LocalHost != nil && *req.LocalHost != existing.LocalHost) ||
+		(req.LocalPort != nil && *req.LocalPort != existing.LocalPort)
+	enabledChanged := req.Enabled != nil && *req.Enabled != existing.Enabled
+
 	config := models.ProxyServiceConfig{
 		Name:         req.Name,
 		LocalHost:    req.LocalHost,
@@ -180,10 +195,41 @@ func (p *ProxyProvider) handleUpdateService(c *fiber.Ctx) error {
 		Enabled:      req.Enabled,
 	}
 
-	if err := p.ModifyService(serviceID, config); err != nil {
+	// Only the running listener's bind target changing (host/port) or the
+	// enabled flag toggling requires a stop/start cycle; other fields (name,
+	// path, protocol, required_auth) can be persisted in place.
+	wasRunning := p.isServiceRunning(serviceID)
+	needsRestart := hostOrPortChanged || enabledChanged
+	if wasRunning && needsRestart {
+		p.stopService(serviceID)
+	}
+
+	if err := p.repo.UpdateService(serviceID, config); err != nil {
 		p.logger.Printf("Error updating service: %v", err)
 		return api.ErrorInternalServerErrorResp(c, "Failed to update service")
 	}
+
+	updated, err := p.repo.GetService(serviceID)
+	if err != nil {
+		p.logger.Printf("Error fetching updated service %s: %v", serviceID, err)
+		return api.ErrorInternalServerErrorResp(c, "Failed to update service")
+	}
+
+	if needsRestart && updated.Enabled {
+		p.mu.RLock()
+		started := p.started
+		ctx := p.ctx
+		p.mu.RUnlock()
+
+		if started && ctx != nil {
+			if err := p.startService(ctx, updated); err != nil {
+				p.logger.Printf("Failed to restart service %s after update: %v", serviceID, err)
+				return api.ErrorInternalServerErrorResp(c, "Service updated but failed to restart")
+			}
+		}
+	}
+
+	p.syncServiceOperation("updated", updated)
 
 	return api.SuccessResp(c, nil)
 }

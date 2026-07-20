@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.5.1] - 2026-07-20
+### Fixes
+- restart a running proxy service automatically when its local host, port, or enabled state is changed via the update API, instead of requiring a manual toggle
+
 ## [0.5.0] - 2026-07-03
 ### Features
 - added option to require authentication for services
