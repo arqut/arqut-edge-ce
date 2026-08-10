@@ -62,3 +62,29 @@ Environment variables:
 - `SERVER_ADDR` - Server listen address (default: `:3030`)
 - `DB_PATH` - Database file path (default: `./data/edge.db`)
 - `CLOUD_URL` - Cloud server URL for WebRTC signaling (optional)
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+Contributions are accepted under the Developer Certificate of Origin. Sign off
+your commits with `git commit -s`; CI checks this on every pull request.
+
+To report a security vulnerability, see [SECURITY.md](SECURITY.md) — please do
+not open a public issue.
+
+## License
+
+Licensed under the Apache License, Version 2.0 — see [LICENSE](LICENSE).
+
+```
+SPDX-License-Identifier: Apache-2.0
+```
+
+Copyright 2024-2026 semilimes AG.
+
+Third-party components are attributed in [NOTICE](NOTICE), with the full
+component list and license texts in
+[THIRD_PARTY_LICENSES](THIRD_PARTY_LICENSES). This covers both the Go modules
+compiled into the binary and the JavaScript packages bundled into the embedded
+management UI. No GPL, LGPL, or AGPL code is distributed with this project.

@@ -1,23 +1,48 @@
 Arqut Edge Community Edition
-Copyright 2024-2026 Arqut
+Copyright 2024-2026 semilimes AG
 
 This product includes software developed by the Arqut project
 (https://github.com/arqut).
 
-This software contains components from the following third-party projects:
+Licensed under the Apache License, Version 2.0. See the LICENSE file for the
+full terms.
+
+--------------------------------------------------------------------------------
+
+This software builds on the following third-party projects (direct
+dependencies):
+
+Go modules:
 
 - GoFiber (https://github.com/gofiber/fiber) - MIT License
 - GORM (https://github.com/go-gorm/gorm) - MIT License
 - glebarez/sqlite (https://github.com/glebarez/sqlite) - MIT License
 - Pion WebRTC (https://github.com/pion/webrtc) - MIT License
 - WireGuard Go (https://golang.zx2c4.com/wireguard) - MIT License
+- wgctrl (https://golang.zx2c4.com/wireguard/wgctrl) - MIT License
 - Gorilla WebSocket (https://github.com/gorilla/websocket) - BSD-2-Clause License
 - golobby/config (https://github.com/golobby/config) - MIT License
 - godotenv (https://github.com/joho/godotenv) - MIT License
-- golang.org/x packages - BSD-3-Clause License
-- modernc.org/sqlite (https://gitlab.com/cznic/sqlite) - BSD-3-Clause License
-- YAML for Go (https://github.com/go-yaml/yaml) - MIT/Apache-2.0 License
-- FastHTTP (https://github.com/valyala/fasthttp) - MIT License
-- Google UUID (https://github.com/google/uuid) - BSD-3-Clause License
+- YAML for Go (https://github.com/go-yaml/yaml) - Apache-2.0 License
+  (contains MIT-licensed portions derived from libyaml)
+- golang.org/x/crypto - BSD-3-Clause License
 
-For detailed license information, see the THIRD_PARTY_LICENSES file.
+JavaScript packages bundled into the embedded management UI:
+
+- Vue (https://github.com/vuejs/core) - MIT License
+- Quasar Framework (https://github.com/quasarframework/quasar) - MIT License
+- @quasar/extras (https://github.com/quasarframework/quasar) - MIT License
+- Vue Router (https://github.com/vuejs/router) - MIT License
+- Pinia (https://github.com/vuejs/pinia) - MIT License
+- Axios (https://github.com/axios/axios) - MIT License
+
+The management UI is built to ui/dist/spa and embedded into the Arqut Edge
+binary (see ui/embed.go), so its production dependencies are redistributed
+with this software and are attributed accordingly. Build-time-only
+devDependencies are not distributed and are not listed.
+
+The full build closure contains 56 Go modules and 52 JavaScript packages.
+None are licensed under the GPL, LGPL, or AGPL.
+
+For the complete component list and full license texts, see the
+THIRD_PARTY_LICENSES file.

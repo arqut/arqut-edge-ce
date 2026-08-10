@@ -1,129 +1,324 @@
 THIRD-PARTY SOFTWARE LICENSES
 
-This file contains the licenses for third-party software components
-included in or used by Arqut Edge Community Edition.
+This file lists the third-party components distributed with, or linked into,
+Arqut Edge Community Edition, together with their licenses.
+
+Arqut Edge ships as a single binary containing two distinct sets of
+third-party code:
+
+  1. Go modules compiled into the binary. The list below covers the build
+     closure reported by `go list -deps ./...`. Test-only dependencies are
+     excluded because they are not distributed.
+
+  2. JavaScript packages bundled into the management UI. The Quasar/Vue
+     single-page application is built to ui/dist/spa and embedded into the
+     binary (see ui/embed.go), so its production dependencies are
+     redistributed and are attributed here. Build-time-only devDependencies
+     (linters, formatters, build tooling) are excluded because they are not
+     part of the shipped bundle.
+
+None of the components below are licensed under the GPL, LGPL, or AGPL.
+
+SUMMARY
+  Go modules (56 total)
+    MIT              39
+    BSD-3-Clause     13
+    Apache-2.0       3
+    BSD-2-Clause     1
+
+  JavaScript packages (embedded UI) (52 total)
+    MIT              49
+    ISC              1
+    BSD-3-Clause     1
+    BSD-2-Clause     1
 
 ================================================================================
-
-GoFiber - github.com/gofiber/fiber
-License: MIT
-URL: https://github.com/gofiber/fiber
-
-The MIT License (MIT)
-
-Copyright (c) 2019-present Fenny and Contributors
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
+GO MODULES
 ================================================================================
 
-GORM - gorm.io/gorm
-License: MIT
-URL: https://github.com/go-gorm/gorm
+--------------------------------------------------------------------------------
+MIT License (39 components)
+--------------------------------------------------------------------------------
 
-The MIT License (MIT)
+  github.com/BurntSushi/toml v1.2.1
+      https://github.com/BurntSushi/toml
+  github.com/andybalholm/brotli v1.1.0
+      https://github.com/andybalholm/brotli
+  github.com/dustin/go-humanize v1.0.1
+      https://github.com/dustin/go-humanize
+  github.com/glebarez/sqlite v1.11.0
+      https://github.com/glebarez/sqlite
+  github.com/gofiber/fiber/v2 v2.52.9
+      https://github.com/gofiber/fiber
+  github.com/golobby/cast v1.3.3
+      https://github.com/golobby/cast
+  github.com/golobby/config/v3 v3.4.2
+      https://github.com/golobby/config
+  github.com/golobby/dotenv v1.3.2
+      https://github.com/golobby/dotenv
+  github.com/golobby/env/v2 v2.2.4
+      https://github.com/golobby/env
+  github.com/jinzhu/inflection v1.0.0
+      https://github.com/jinzhu/inflection
+  github.com/jinzhu/now v1.1.5
+      https://github.com/jinzhu/now
+  github.com/joho/godotenv v1.5.1
+      https://github.com/joho/godotenv
+  github.com/mattn/go-colorable v0.1.13
+      https://github.com/mattn/go-colorable
+  github.com/mattn/go-isatty v0.0.20
+      https://github.com/mattn/go-isatty
+  github.com/mattn/go-runewidth v0.0.16
+      https://github.com/mattn/go-runewidth
+  github.com/ncruces/go-strftime v0.1.9
+      https://github.com/ncruces/go-strftime
+  github.com/pion/datachannel v1.5.10
+      https://github.com/pion/datachannel
+  github.com/pion/dtls/v3 v3.0.7
+      https://github.com/pion/dtls
+  github.com/pion/ice/v4 v4.0.10
+      https://github.com/pion/ice
+  github.com/pion/interceptor v0.1.41
+      https://github.com/pion/interceptor
+  github.com/pion/logging v0.2.4
+      https://github.com/pion/logging
+  github.com/pion/mdns/v2 v2.0.7
+      https://github.com/pion/mdns
+  github.com/pion/randutil v0.1.0
+      https://github.com/pion/randutil
+  github.com/pion/rtcp v1.2.15
+      https://github.com/pion/rtcp
+  github.com/pion/rtp v1.8.22
+      https://github.com/pion/rtp
+  github.com/pion/sctp v1.8.39
+      https://github.com/pion/sctp
+  github.com/pion/sdp/v3 v3.0.16
+      https://github.com/pion/sdp
+  github.com/pion/srtp/v3 v3.0.8
+      https://github.com/pion/srtp
+  github.com/pion/stun/v3 v3.0.0
+      https://github.com/pion/stun
+  github.com/pion/transport/v3 v3.0.8
+      https://github.com/pion/transport
+  github.com/pion/turn/v4 v4.1.1
+      https://github.com/pion/turn
+  github.com/pion/webrtc/v4 v4.1.5
+      https://github.com/pion/webrtc
+  github.com/rivo/uniseg v0.2.0
+      https://github.com/rivo/uniseg
+  github.com/valyala/bytebufferpool v1.0.0
+      https://github.com/valyala/bytebufferpool
+  github.com/valyala/fasthttp v1.51.0
+      https://github.com/valyala/fasthttp
+  golang.zx2c4.com/wintun v0.0.0-20230126152724-0fa3db229ce2
+      https://golang.zx2c4.com/wintun
+  golang.zx2c4.com/wireguard/wgctrl v0.0.0-20241231184526-a9ab2273dd10
+      https://golang.zx2c4.com/wireguard/wgctrl
+  golang.zx2c4.com/wireguard v0.0.0-20250521234502-f333402bd9cb
+      https://golang.zx2c4.com/wireguard
+  gorm.io/gorm v1.31.0
+      https://gorm.io/gorm
 
-Copyright (c) 2013-present Jinzhu <wosmvp@gmail.com>
+--------------------------------------------------------------------------------
+BSD 3-Clause License (13 components)
+--------------------------------------------------------------------------------
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+  github.com/glebarez/go-sqlite v1.22.0
+      https://github.com/glebarez/go-sqlite
+  github.com/google/uuid v1.6.0
+      https://github.com/google/uuid
+  github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec
+      https://github.com/remyoudompheng/bigfft
+  github.com/wlynxg/anet v0.0.5
+      https://github.com/wlynxg/anet
+  golang.org/x/crypto v0.37.0
+      https://golang.org/x/crypto
+  golang.org/x/exp v0.0.0-20251002181428-27f1f14c8bb9
+      https://golang.org/x/exp
+  golang.org/x/net v0.39.0
+      https://golang.org/x/net
+  golang.org/x/sys v0.36.0
+      https://golang.org/x/sys
+  golang.org/x/text v0.29.0
+      https://golang.org/x/text
+  modernc.org/libc v1.66.10
+      https://modernc.org/libc
+  modernc.org/mathutil v1.7.1
+      https://modernc.org/mathutil
+  modernc.org/memory v1.11.0
+      https://modernc.org/memory
+  modernc.org/sqlite v1.39.0
+      https://modernc.org/sqlite
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+--------------------------------------------------------------------------------
+Apache License 2.0 (3 components)
+--------------------------------------------------------------------------------
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+  github.com/klauspost/compress v1.17.9
+      https://github.com/klauspost/compress
+  go.yaml.in/yaml/v3 v3.0.4
+      https://go.yaml.in/yaml
+  gopkg.in/yaml.v3 v3.0.1
+      https://gopkg.in/yaml.v3
+
+--------------------------------------------------------------------------------
+BSD 2-Clause License (1 component)
+--------------------------------------------------------------------------------
+
+  github.com/gorilla/websocket v1.5.3
+      https://github.com/gorilla/websocket
 
 ================================================================================
-
-glebarez/sqlite - github.com/glebarez/sqlite
-License: MIT
-URL: https://github.com/glebarez/sqlite
-
-The MIT License (MIT)
-
-Copyright (c) 2022 Glebarez
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
+JAVASCRIPT PACKAGES (EMBEDDED UI)
 ================================================================================
 
-Pion WebRTC - github.com/pion/webrtc
-License: MIT
-URL: https://github.com/pion/webrtc
+--------------------------------------------------------------------------------
+MIT License (49 components)
+--------------------------------------------------------------------------------
 
+  @babel/helper-string-parser 7.27.1
+      https://www.npmjs.com/package/@babel/helper-string-parser
+  @babel/helper-validator-identifier 7.27.1
+      https://www.npmjs.com/package/@babel/helper-validator-identifier
+  @babel/parser 7.28.4
+      https://www.npmjs.com/package/@babel/parser
+  @babel/types 7.28.4
+      https://www.npmjs.com/package/@babel/types
+  @jridgewell/sourcemap-codec 1.5.5
+      https://www.npmjs.com/package/@jridgewell/sourcemap-codec
+  @quasar/extras 1.17.0
+      https://www.npmjs.com/package/@quasar/extras
+  @vue/compiler-core 3.5.22
+      https://www.npmjs.com/package/@vue/compiler-core
+  @vue/compiler-dom 3.5.22
+      https://www.npmjs.com/package/@vue/compiler-dom
+  @vue/compiler-sfc 3.5.22
+      https://www.npmjs.com/package/@vue/compiler-sfc
+  @vue/compiler-ssr 3.5.22
+      https://www.npmjs.com/package/@vue/compiler-ssr
+  @vue/devtools-api 6.6.4
+      https://www.npmjs.com/package/@vue/devtools-api
+  @vue/reactivity 3.5.22
+      https://www.npmjs.com/package/@vue/reactivity
+  @vue/runtime-core 3.5.22
+      https://www.npmjs.com/package/@vue/runtime-core
+  @vue/runtime-dom 3.5.22
+      https://www.npmjs.com/package/@vue/runtime-dom
+  @vue/server-renderer 3.5.22
+      https://www.npmjs.com/package/@vue/server-renderer
+  @vue/shared 3.5.22
+      https://www.npmjs.com/package/@vue/shared
+  asynckit 0.4.0
+      https://www.npmjs.com/package/asynckit
+  axios 1.12.2
+      https://www.npmjs.com/package/axios
+  call-bind-apply-helpers 1.0.2
+      https://www.npmjs.com/package/call-bind-apply-helpers
+  combined-stream 1.0.8
+      https://www.npmjs.com/package/combined-stream
+  csstype 3.1.3
+      https://www.npmjs.com/package/csstype
+  delayed-stream 1.0.0
+      https://www.npmjs.com/package/delayed-stream
+  dunder-proto 1.0.1
+      https://www.npmjs.com/package/dunder-proto
+  es-define-property 1.0.1
+      https://www.npmjs.com/package/es-define-property
+  es-errors 1.3.0
+      https://www.npmjs.com/package/es-errors
+  es-object-atoms 1.1.1
+      https://www.npmjs.com/package/es-object-atoms
+  es-set-tostringtag 2.1.0
+      https://www.npmjs.com/package/es-set-tostringtag
+  estree-walker 2.0.2
+      https://www.npmjs.com/package/estree-walker
+  follow-redirects 1.15.11
+      https://www.npmjs.com/package/follow-redirects
+  form-data 4.0.4
+      https://www.npmjs.com/package/form-data
+  function-bind 1.1.2
+      https://www.npmjs.com/package/function-bind
+  get-intrinsic 1.3.0
+      https://www.npmjs.com/package/get-intrinsic
+  get-proto 1.0.1
+      https://www.npmjs.com/package/get-proto
+  gopd 1.2.0
+      https://www.npmjs.com/package/gopd
+  has-symbols 1.1.0
+      https://www.npmjs.com/package/has-symbols
+  has-tostringtag 1.0.2
+      https://www.npmjs.com/package/has-tostringtag
+  hasown 2.0.2
+      https://www.npmjs.com/package/hasown
+  magic-string 0.30.19
+      https://www.npmjs.com/package/magic-string
+  math-intrinsics 1.1.0
+      https://www.npmjs.com/package/math-intrinsics
+  mime-db 1.52.0
+      https://www.npmjs.com/package/mime-db
+  mime-types 2.1.35
+      https://www.npmjs.com/package/mime-types
+  nanoid 3.3.11
+      https://www.npmjs.com/package/nanoid
+  pinia 2.3.1
+      https://www.npmjs.com/package/pinia
+  postcss 8.5.6
+      https://www.npmjs.com/package/postcss
+  proxy-from-env 1.1.0
+      https://www.npmjs.com/package/proxy-from-env
+  quasar 2.18.5
+      https://www.npmjs.com/package/quasar
+  vue-demi 0.14.10
+      https://www.npmjs.com/package/vue-demi
+  vue-router 4.5.1
+      https://www.npmjs.com/package/vue-router
+  vue 3.5.22
+      https://www.npmjs.com/package/vue
+
+--------------------------------------------------------------------------------
+BSD 3-Clause License (1 component)
+--------------------------------------------------------------------------------
+
+  source-map-js 1.2.1
+      https://www.npmjs.com/package/source-map-js
+
+--------------------------------------------------------------------------------
+BSD 2-Clause License (1 component)
+--------------------------------------------------------------------------------
+
+  entities 4.5.0
+      https://www.npmjs.com/package/entities
+
+--------------------------------------------------------------------------------
+ISC License (1 component)
+--------------------------------------------------------------------------------
+
+  picocolors 1.1.1
+      https://www.npmjs.com/package/picocolors
+
+================================================================================
+FULL LICENSE TEXTS
+================================================================================
+
+The components above are covered by the license texts reproduced below.
+Copyright notices remain with their respective holders; consult each project's
+repository for its individual copyright line.
+
+
+--------------------------------------------------------------------------------
+Apache License 2.0
+--------------------------------------------------------------------------------
+
+Arqut Edge Community Edition is itself licensed under the Apache License 2.0.
+The complete text is reproduced in the LICENSE file at the root of this
+repository and is available at:
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+
+--------------------------------------------------------------------------------
 MIT License
-
-Copyright (c) The Pion community (https://pion.ly)
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
-================================================================================
-
-WireGuard Go - golang.zx2c4.com/wireguard
-License: MIT
-URL: https://git.zx2c4.com/wireguard-go
-
-MIT License
-
-Copyright (C) 2017-2023 WireGuard LLC. All Rights Reserved.
+--------------------------------------------------------------------------------
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -143,130 +338,10 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-================================================================================
 
-Gorilla WebSocket - github.com/gorilla/websocket
-License: BSD-2-Clause
-URL: https://github.com/gorilla/websocket
-
-Copyright (c) 2013 The Gorilla WebSocket Authors. All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-
-  Redistributions of source code must retain the above copyright notice, this
-  list of conditions and the following disclaimer.
-
-  Redistributions in binary form must reproduce the above copyright notice,
-  this list of conditions and the following disclaimer in the documentation
-  and/or other materials provided with the distribution.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
-FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-================================================================================
-
-golobby/config - github.com/golobby/config
-License: MIT
-URL: https://github.com/golobby/config
-
-MIT License
-
-Copyright (c) 2020 GoLobby
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
-================================================================================
-
-godotenv - github.com/joho/godotenv
-License: MIT
-URL: https://github.com/joho/godotenv
-
-Copyright (c) 2013 John Barton
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
-================================================================================
-
-Go Cryptography - golang.org/x/crypto
-License: BSD-3-Clause
-URL: https://cs.opensource.google/go/x/crypto
-
-Copyright (c) 2009 The Go Authors. All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are
-met:
-
-   * Redistributions of source code must retain the above copyright
-notice, this list of conditions and the following disclaimer.
-   * Redistributions in binary form must reproduce the above
-copyright notice, this list of conditions and the following disclaimer
-in the documentation and/or other materials provided with the
-distribution.
-   * Neither the name of Google Inc. nor the names of its
-contributors may be used to endorse or promote products derived from
-this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-================================================================================
-
-modernc.org/sqlite
-License: BSD-3-Clause
-URL: https://gitlab.com/cznic/sqlite
-
-Copyright (c) 2017 The Sqlite Authors. All rights reserved.
+--------------------------------------------------------------------------------
+BSD 3-Clause License
+--------------------------------------------------------------------------------
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -293,91 +368,45 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-================================================================================
 
-YAML for Go - go.yaml.in/yaml
-License: MIT / Apache-2.0
-URL: https://github.com/go-yaml/yaml
-
-Copyright (c) 2011-2019 Canonical Ltd
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
-================================================================================
-
-FastHTTP - github.com/valyala/fasthttp
-License: MIT
-URL: https://github.com/valyala/fasthttp
-
-The MIT License (MIT)
-
-Copyright (c) 2015-present Aliaksandr Valialkin, VertaMedia, Kirill Danshin,
-Erik Dubbelboer, and FastHTTP Authors
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
-================================================================================
-
-Google UUID - github.com/google/uuid
-License: BSD-3-Clause
-URL: https://github.com/google/uuid
-
-Copyright (c) 2009,2014 Google Inc. All rights reserved.
+--------------------------------------------------------------------------------
+BSD 2-Clause License
+--------------------------------------------------------------------------------
 
 Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are
-met:
+modification, are permitted provided that the following conditions are met:
 
-   * Redistributions of source code must retain the above copyright
-notice, this list of conditions and the following disclaimer.
-   * Redistributions in binary form must reproduce the above
-copyright notice, this list of conditions and the following disclaimer
-in the documentation and/or other materials provided with the
-distribution.
-   * Neither the name of Google Inc. nor the names of its
-contributors may be used to endorse or promote products derived from
-this software without specific prior written permission.
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+--------------------------------------------------------------------------------
+ISC License
+--------------------------------------------------------------------------------
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
+FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.
