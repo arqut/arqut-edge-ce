@@ -63,6 +63,40 @@ Environment variables:
 - `DB_PATH` - Database file path (default: `./data/edge.db`)
 - `CLOUD_URL` - Cloud server URL for WebRTC signaling (optional)
 
+## Verifying Downloads
+
+Released binaries ship with a `SHA256SUMS` file, a Sigstore signature over it,
+an SPDX SBOM, and a GitHub build provenance attestation. Arqut Edge runs inside
+your own network, so verify before you run it.
+
+Confirm the download matches its published checksum:
+
+```bash
+sha256sum --check --ignore-missing SHA256SUMS
+```
+
+Confirm the checksums were produced by this repository's release workflow and
+not substituted afterwards:
+
+```bash
+cosign verify-blob SHA256SUMS \
+  --signature SHA256SUMS.sig \
+  --certificate SHA256SUMS.pem \
+  --certificate-identity-regexp '^https://github.com/arqut/arqut-edge-ce/\.github/workflows/build\.yaml@refs/tags/' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com
+```
+
+Confirm build provenance — which workflow, commit, and tag produced the binary:
+
+```bash
+gh attestation verify arqut-edge-ce_linux-amd64 --repo arqut/arqut-edge-ce
+```
+
+Signing is keyless via Sigstore: there is no long-lived private key to steal,
+and the signing certificate records the workflow identity that produced the
+artifact. The SBOM covers both the Go modules and the npm packages bundled into
+the embedded management UI.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.

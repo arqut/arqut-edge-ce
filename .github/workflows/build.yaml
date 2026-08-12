@@ -7,6 +7,8 @@ on:
 
 permissions:
   contents: write
+  id-token: write # keyless cosign signing and build provenance
+  attestations: write
 
 jobs:
   build:
@@ -38,9 +40,11 @@ jobs:
           ref: ${{ steps.set_tag.outputs.tag_name }}
 
       - name: Setup Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
-          go-version: "1.24"
+          # Track the toolchain declared in go.mod rather than a hardcoded
+          # version, so the two cannot drift apart.
+          go-version-file: go.mod
           cache: true
 
       - name: Setup Node.js
@@ -69,12 +73,82 @@ jobs:
           cp dist/arqut-edge-ce_linux_amd64_v1/arqut-edge-ce releases/arqut-edge-ce_linux-amd64
           cp dist/arqut-edge-ce_linux_386_sse2/arqut-edge-ce releases/arqut-edge-ce_linux-i386
 
+      - name: Attest Build Provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          # Runs before the checksum, signature, and SBOM files are added to
+          # releases/, so only the binaries are attested.
+          subject-path: releases/*
+
+      - name: Generate Checksums
+        working-directory: ./releases
+        run: |
+          set -e
+          sha256sum arqut-edge-ce_linux-* > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Sign Checksums
+        working-directory: ./releases
+        run: |
+          set -e
+          cosign sign-blob --yes \
+            --output-signature SHA256SUMS.sig \
+            --output-certificate SHA256SUMS.pem \
+            SHA256SUMS
+
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          # Scans the built tree, so the SBOM covers both the Go modules and
+          # the npm packages bundled into the embedded UI.
+          path: .
+          format: spdx-json
+          output-file: releases/arqut-edge-ce.spdx.json
+          upload-artifact: false
+          upload-release-assets: false
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.set_tag.outputs.tag_name }}
           name: "Release ${{ steps.set_tag.outputs.tag_name }}"
-          body: "Automated release for Arqut Edge CE"
           files: releases/*
+          body: |
+            Automated release for Arqut Edge CE.
+
+            ## Verifying this release
+
+            Every binary is accompanied by a SHA-256 checksum, a Sigstore
+            signature over those checksums, an SPDX SBOM, and a GitHub build
+            provenance attestation.
+
+            **1. Check the download matches its checksum**
+
+            ```bash
+            sha256sum --check --ignore-missing SHA256SUMS
+            ```
+
+            **2. Verify the checksums were signed by this workflow**
+
+            ```bash
+            cosign verify-blob SHA256SUMS \
+              --signature SHA256SUMS.sig \
+              --certificate SHA256SUMS.pem \
+              --certificate-identity-regexp '^https://github.com/arqut/arqut-edge-ce/\.github/workflows/build\.yaml@refs/tags/' \
+              --certificate-oidc-issuer https://token.actions.githubusercontent.com
+            ```
+
+            **3. Verify build provenance**
+
+            ```bash
+            gh attestation verify arqut-edge-ce_linux-amd64 --repo arqut/arqut-edge-ce
+            ```
+
+            Signing is keyless: there is no private key to steal, and the
+            certificate records which workflow, repository, and tag produced
+            the artifact.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
