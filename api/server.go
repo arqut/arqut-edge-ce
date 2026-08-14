@@ -235,8 +235,10 @@ func (s *ApiServer) handleExposeHAAddon(c *fiber.Ctx) error {
 		return api.ErrorInternalServerErrorResp(c, err.Error())
 	}
 
-	// Update HA config with trusted proxy subnets
-	haaddon.UpdateHAConfig()
+	// Update HA config with trusted proxy subnets. On current Home Assistant
+	// this restarts Core and waits for it to come back, far longer than the
+	// request should stay open, so it runs detached from it.
+	go haaddon.UpdateHAConfig(context.Background())
 
 	return api.SuccessResp(c, service)
 }

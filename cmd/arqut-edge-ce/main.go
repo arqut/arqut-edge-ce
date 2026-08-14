@@ -91,8 +91,10 @@ func main() {
 					appLogger.Warn("HA Addon service setup failed with error: %v", err)
 				} else {
 					appLogger.Info("Home Assistant Dashboard service created")
-					// Update HA config with trusted proxy subnets
-					haaddon.UpdateHAConfig()
+					// Update HA config with trusted proxy subnets. This waits
+					// out a Home Assistant restart on current versions, so it
+					// must not hold up the rest of startup.
+					go haaddon.UpdateHAConfig(ctx)
 				}
 			}
 		}

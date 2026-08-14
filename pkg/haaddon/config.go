@@ -2,9 +2,11 @@ package haaddon
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"net"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/arqut/arqut-edge-ce/pkg/utils"
@@ -12,7 +14,12 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const configPath = "/haconfig/configuration.yaml"
+// haConfigDir is where Supervisor maps the Home Assistant configuration
+// directory into the add-on container, per the `homeassistant_config` entry in
+// the add-on config.yaml.
+const haConfigDir = "/haconfig"
+
+var configPath = filepath.Join(haConfigDir, "configuration.yaml")
 
 // GetNetworkSubnets returns the network subnets that will be added as trusted proxies
 func GetNetworkSubnets() ([]string, error) {
@@ -47,45 +54,86 @@ func GetNetworkSubnets() ([]string, error) {
 	return subnets, nil
 }
 
-// UpdateHAConfig updates the Home Assistant configuration to trust the edge proxy
-func UpdateHAConfig() {
-	// 1) Detect all container IPs
-	ips, err := utils.GetLocalIPs(false)
+// UpdateHAConfig makes Home Assistant trust the add-on as a reverse proxy.
+//
+// Which mechanism applies depends on the Core version. Up to 2026.7 the http
+// integration is configured from configuration.yaml. From 2026.8 on that block
+// is imported once and then ignored in favour of a store only reachable over
+// the websocket API, and a block written to a config past that point either
+// does nothing or is staged as a trial that reverts a few minutes later. Both
+// failures are silent, so the version picks the path and there is no falling
+// back from one to the other.
+//
+// This blocks for as long as it takes Core to restart, so callers that care
+// about their own startup time should run it in the background.
+func UpdateHAConfig(ctx context.Context) {
+	subnets, err := GetNetworkSubnets()
 	if err != nil {
-		log.Errorf("Could not detect local IPs: %v", err)
+		log.Errorf("Could not determine trusted proxy subnets: %v", err)
 		return
 	}
-
-	var subnets []string
-
-	for _, ipStr := range ips {
-		ip := net.ParseIP(ipStr)
-		if ip == nil {
-			log.Warnf("Skipping unparsable IP: %s", ipStr)
-			continue
-		}
-
-		// -- IPv4 → /24
-		if ip4 := ip.To4(); ip4 != nil {
-			subnets = append(subnets, to24(ip4))
-			continue
-		}
-
-		// -- IPv6 --
-		//  a) link-local? skip
-		if ip.IsLinkLocalUnicast() {
-			continue
-		}
-		//  b) otherwise treat as /64
-		subnets = append(subnets, to64(ip))
-	}
-
 	if len(subnets) == 0 {
 		log.Error("No valid local subnets found")
 		return
 	}
 
-	// 2) Update HA config for each subnet
+	version, err := resolveHAVersion(ctx)
+	if err != nil {
+		log.Errorf("Could not determine the Home Assistant version: %v", err)
+		return
+	}
+
+	if !version.atLeast(storeConfigVersion) {
+		log.Infof("Home Assistant %s is configured from YAML", version)
+		updateHAConfigYAML(subnets)
+		return
+	}
+
+	log.Infof("Home Assistant %s is configured from its own store", version)
+	if err := reconcileTrustedProxies(ctx, subnets); err != nil {
+		log.Errorf("Could not configure trusted proxies in Home Assistant: %v", err)
+	}
+}
+
+// resolveHAVersion reads the version off disk, and falls back to asking Core
+// when the configuration directory is not mapped into the add-on.
+func resolveHAVersion(ctx context.Context) (haVersion, error) {
+	version, err := readHAVersion()
+	if err == nil {
+		return version, nil
+	}
+	log.Debugf("Could not read the Home Assistant version from disk: %v", err)
+
+	token, err := supervisorToken()
+	if err != nil {
+		return haVersion{}, err
+	}
+
+	var reported haVersion
+	err = whenReady(ctx, func(ctx context.Context) error {
+		client, err := dialHA(ctx, token)
+		if err != nil {
+			return err
+		}
+		defer client.close()
+
+		// Core reports its version during the handshake, which is all this
+		// connection is for.
+		if client.version == (haVersion{}) {
+			return fmt.Errorf("Home Assistant did not report a usable version")
+		}
+		reported = client.version
+		return nil
+	})
+	if err != nil {
+		return haVersion{}, err
+	}
+	return reported, nil
+}
+
+// updateHAConfigYAML trusts each subnet through configuration.yaml, which is
+// how the http integration is configured up to Home Assistant 2026.7.
+func updateHAConfigYAML(subnets []string) {
 	for _, subnet := range subnets {
 		log.Infof("Adding trusted proxy subnet: %s", subnet)
 		if err := ensureTrustedProxySubnet(configPath, subnet); err != nil {
