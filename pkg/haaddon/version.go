@@ -14,6 +14,33 @@ import (
 // proxies have to be set through the websocket API instead.
 var storeConfigVersion = haVersion{year: 2026, month: 8}
 
+// ConfigMode is where Home Assistant takes its http configuration from. It
+// decides what to tell the user about trusted proxies: the two mechanisms are
+// configured in different places and applied at different times.
+type ConfigMode string
+
+const (
+	// ConfigModeYAML is configuration.yaml, up to Home Assistant 2026.7. Changes
+	// need a manual restart to take effect.
+	ConfigModeYAML ConfigMode = "yaml"
+	// ConfigModeStore is Home Assistant's own store, from 2026.8 on, edited
+	// under Settings > System > Network. Changes restart Core on their own.
+	ConfigModeStore ConfigMode = "store"
+)
+
+// HTTPConfigMode reports where the Home Assistant alongside this add-on takes
+// its http configuration from.
+func HTTPConfigMode() (ConfigMode, error) {
+	version, err := readHAVersion()
+	if err != nil {
+		return "", err
+	}
+	if version.atLeast(storeConfigVersion) {
+		return ConfigModeStore, nil
+	}
+	return ConfigModeYAML, nil
+}
+
 // haVersion is a Home Assistant calendar version, truncated to the parts that
 // decide which configuration mechanism applies.
 type haVersion struct {
