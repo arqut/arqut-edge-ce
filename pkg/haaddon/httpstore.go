@@ -134,7 +134,7 @@ func configureTrustedProxies(ctx context.Context, subnets []string) error {
 		// Core is on trial with a config that already trusts us, so confirming
 		// it is all that is left. Skipping this would let it revert.
 		log.Info("Confirming the pending Home Assistant HTTP configuration")
-		return client.promote()
+		return confirm(client)
 	}
 
 	restart, err := client.configure(desired)
@@ -150,7 +150,49 @@ func configureTrustedProxies(ctx context.Context, subnets []string) error {
 		}
 	}
 
-	return client.promote()
+	return confirm(client)
+}
+
+// confirm settles the config on trial, which is what stops Core counting down
+// to a revert.
+//
+// What is on trial is re-read rather than assumed. This runs against a Core
+// that reloaded its store since the config was staged, and the slot may hold
+// something else by now or nothing at all: Core drops a staged config that
+// turned out to equal the confirmed one, and applying a config that leaves
+// nothing on trial is a success, not a failure. Promoting blind reports that
+// outcome - the one being worked towards - as an error.
+func confirm(client *haClient) error {
+	onTrial, err := client.pendingOnTrial()
+	if err != nil {
+		return err
+	}
+	if !onTrial {
+		log.Info("Home Assistant now trusts the Arqut Edge proxy")
+		return nil
+	}
+
+	if err := client.promote(); err != nil {
+		// The slot can settle between the read and the call, either because
+		// Core reverted the trial or because someone confirmed it in the UI.
+		// Re-read before calling a lost race a failure.
+		if onTrial, readErr := client.pendingOnTrial(); readErr == nil && !onTrial {
+			log.Info("The pending Home Assistant HTTP configuration was already settled")
+			return nil
+		}
+		return err
+	}
+	return nil
+}
+
+// pendingOnTrial reports whether Core is running a config it still expects to
+// have confirmed.
+func (c *haClient) pendingOnTrial() (bool, error) {
+	state, err := c.httpConfig()
+	if err != nil {
+		return false, fmt.Errorf("read the HTTP configuration: %w", err)
+	}
+	return state.Pending.onTrial(), nil
 }
 
 // withTrustedProxies returns base extended to trust subnets, and reports
@@ -273,7 +315,8 @@ func (c *haClient) configure(config haConfig) (bool, error) {
 	return result.Restart, nil
 }
 
-// promote confirms the pending config, which is what stops Core reverting it.
+// promote confirms the config on trial. Callers go through confirm, which
+// checks there is one first.
 func (c *haClient) promote() error {
 	if _, err := c.call(map[string]any{"type": cmdPromote}); err != nil {
 		return fmt.Errorf("confirm the HTTP configuration: %w", err)
