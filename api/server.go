@@ -225,20 +225,28 @@ func (s *ApiServer) handleExposeHAAddon(c *fiber.Ctx) error {
 		return api.ErrorInternalServerErrorResp(c, "Invalid proxy service")
 	}
 
+	// Exposing Home Assistant takes more than a tunnel: it drops tunnelled
+	// requests until it knows the proxy in front of it is one to trust. That
+	// half can go missing on its own - someone edits the setting, or Home
+	// Assistant reverts an unconfirmed change - so this endpoint is the one
+	// place a user can ask for it back, and it runs whether or not the tunnel
+	// is already there.
+	//
+	// On current Home Assistant this restarts Core and waits for it to come
+	// back, far longer than the request should stay open, so it runs detached.
+	go haaddon.UpdateHAConfig(context.Background())
+
 	// Create the HA Addon service
 	service, err := proxyImpl.CreateHAAddonService()
 	if err != nil {
-		// Check if service already exists
+		// An existing tunnel is not a conflict here. It says nothing about the
+		// trusted proxy setting, which this call just asked to have restored,
+		// so report success rather than refusing the repair that is under way.
 		if strings.Contains(err.Error(), "already set up") {
-			return api.ErrorCodeResp(c, fiber.StatusConflict, "Home Assistant service is already configured")
+			return api.SuccessResp(c, nil)
 		}
 		return api.ErrorInternalServerErrorResp(c, err.Error())
 	}
-
-	// Update HA config with trusted proxy subnets. On current Home Assistant
-	// this restarts Core and waits for it to come back, far longer than the
-	// request should stay open, so it runs detached from it.
-	go haaddon.UpdateHAConfig(context.Background())
 
 	return api.SuccessResp(c, service)
 }

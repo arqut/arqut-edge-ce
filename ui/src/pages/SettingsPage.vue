@@ -117,12 +117,10 @@
 <script setup lang="ts">
 import { useQuasar } from 'quasar';
 import { onMounted, computed, ref } from 'vue';
-import { useRouter } from 'vue-router';
 import { useIntegrationsStore } from '../stores/integrations';
 
 const integrations = useIntegrationsStore();
 const q = useQuasar();
-const router = useRouter();
 
 const tab = ref('integrations');
 const exposing = ref(false);
@@ -139,16 +137,14 @@ const exposeHAAddon = async () => {
   exposing.value = true;
   try {
     const res = await integrations.exposeHAAddon();
+    // An existing tunnel no longer conflicts: the call also puts the trusted
+    // proxy setting back, so it succeeds whether or not there was anything to
+    // create. Staying put keeps the settings page in view, which is where the
+    // reader was and where a repair that changed nothing visible belongs.
     if (res.success) {
       q.notify({
         color: 'positive',
         message: 'Home Assistant has been exposed via tunnel successfully.',
-      });
-      void router.push('/services');
-    } else if (res.error?.code === 409) {
-      q.notify({
-        color: 'warning',
-        message: 'Home Assistant has already been exposed via tunnel.',
       });
     } else {
       q.notify({

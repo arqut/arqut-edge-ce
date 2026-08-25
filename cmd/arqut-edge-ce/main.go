@@ -91,11 +91,18 @@ func main() {
 					appLogger.Warn("HA Addon service setup failed with error: %v", err)
 				} else {
 					appLogger.Info("Home Assistant Dashboard service created")
-					// Update HA config with trusted proxy subnets. This waits
-					// out a Home Assistant restart on current versions, so it
-					// must not hold up the rest of startup.
-					go haaddon.UpdateHAConfig(ctx)
 				}
+
+				// Trusted proxies are reconciled on every start, not only on
+				// the one that creates the tunnel. Home Assistant can lose the
+				// setting long after that - someone edits it, or a trial is
+				// reverted - and a previous run may have left a pending config
+				// that still needs confirming. Tying this to the tunnel being
+				// new would mean it never ran again.
+				//
+				// This waits out a Home Assistant restart, so it must not hold
+				// up the rest of startup.
+				go haaddon.UpdateHAConfig(ctx)
 			}
 		}
 	}
